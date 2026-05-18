@@ -1,0 +1,9 @@
+parameters:
+	level: 9
+	paths:
+		- admin
+		- includes
+	bootstrapFiles:
+		- tests/phpstan/constants.php
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon

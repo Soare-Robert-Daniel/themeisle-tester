@@ -7,8 +7,18 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scripts": "wp-build",
+    "dev": "wp-build --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "biome format --write",
+    "lint": "biome lint",
+    "lint:fix": "biome lint --write",
+    "check": "biome check --write"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@wordpress/build": "^0.14.0"
+  }
 }
