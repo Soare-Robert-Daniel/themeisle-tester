@@ -5,5 +5,7 @@ parameters:
 		- includes
 	bootstrapFiles:
 		- tests/phpstan/constants.php
+		- tests/phpstan/woocommerce-stubs.php
+		- tests/phpstan/ppom-stubs.php
 includes:
 	- vendor/szepeviktor/phpstan-wordpress/extension.neon

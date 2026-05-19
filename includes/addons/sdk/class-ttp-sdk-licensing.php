@@ -59,6 +59,110 @@ class TTP_SDK_Licensing {
 	}
 
 	/**
+	 * Register the force license refresh Utility (embedded in the license data editor card).
+	 *
+	 * @param TTP_Item_Registry $registry Item registry.
+	 * @return void
+	 */
+	public function register_force_license_refresh( TTP_Item_Registry $registry ) {
+		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
+		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
+
+		$registry->register(
+			array(
+				'id'               => 'force_license_refresh',
+				'type'             => 'utility',
+				'categories'       => array( $install_licensing ),
+				'product'          => $shared_sdk,
+				'label'            => __( 'Force license refresh', 'themeisle-tester' ),
+				'description'      => __( 'Re-fetches license state from the licensing API and clears the local cache.', 'themeisle-tester' ),
+				'dashboard_hidden' => true,
+				'run'              => array( $this, 'run_force_license_refresh' ),
+			)
+		);
+	}
+
+	/**
+	 * Clear the SDK license cache transient and call the refresh REST endpoint.
+	 *
+	 * @param array<string,mixed> $item    Item definition.
+	 * @param array<string,mixed> $payload Request payload (unused).
+	 * @return array<string,mixed>|WP_Error
+	 */
+	public function run_force_license_refresh( $item, $payload ) {
+		unset( $item, $payload );
+
+		$cache_key = 'ti_license_cache';
+		$deleted   = delete_transient( $cache_key );
+
+		$endpoint = rest_url( 'ti/v1/license/refresh' );
+		$response = wp_remote_post(
+			$endpoint,
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'X-WP-Nonce' => wp_create_nonce( 'wp_rest' ),
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status_code = (int) wp_remote_retrieve_response_code( $response );
+		$body        = wp_remote_retrieve_body( $response );
+		$details     = array(
+			sprintf(
+				/* translators: 1: transient name, 2: deleted or not found. */
+				__( 'Transient %1$s: %2$s', 'themeisle-tester' ),
+				$cache_key,
+				$deleted ? __( 'deleted', 'themeisle-tester' ) : __( 'not present', 'themeisle-tester' )
+			),
+			sprintf(
+				/* translators: 1: REST URL, 2: HTTP status code. */
+				__( 'POST %1$s → HTTP %2$d', 'themeisle-tester' ),
+				$endpoint,
+				$status_code
+			),
+		);
+
+		if ( '' !== $body ) {
+			$decoded = json_decode( $body, true );
+
+			if ( is_array( $decoded ) ) {
+				$encoded = wp_json_encode( $decoded );
+
+				if ( is_string( $encoded ) ) {
+					$details[] = $encoded;
+				}
+			} else {
+				$details[] = sanitize_text_field( $body );
+			}
+		}
+
+		if ( $status_code < 200 || $status_code >= 300 ) {
+			return new WP_Error(
+				'ttp_license_refresh_failed',
+				sprintf(
+					/* translators: %d: HTTP status code. */
+					__( 'License refresh request failed (HTTP %d).', 'themeisle-tester' ),
+					$status_code
+				),
+				array(
+					'status'  => $status_code,
+					'details' => $details,
+				)
+			);
+		}
+
+		return array(
+			'message' => __( 'License cache cleared and refresh completed.', 'themeisle-tester' ),
+			'details' => $details,
+		);
+	}
+
+	/**
 	 * Register the install timestamp editor Danger Utility.
 	 *
 	 * @param TTP_Item_Registry $registry Item registry.
@@ -75,7 +179,7 @@ class TTP_SDK_Licensing {
 				'categories'  => array( $install_licensing ),
 				'product'     => $shared_sdk,
 				'label'       => __( 'Install timestamp scanner/editor', 'themeisle-tester' ),
-				'description' => __( 'Scans and changes *_install timestamp options with backup support.', 'themeisle-tester' ),
+				'description' => __( 'Scans and changes *_install timestamp options. Includes force license refresh (clears ti_license_cache and calls the licensing API).', 'themeisle-tester' ),
 				'fields'      => array(
 					array(
 						'id'    => 'date',

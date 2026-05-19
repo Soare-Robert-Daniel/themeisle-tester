@@ -211,6 +211,43 @@ class TTP_Danger_Table_Renderer {
 	}
 
 	/**
+	 * Render the embedded force license refresh action (inline on install timestamp card).
+	 *
+	 * @return void
+	 */
+	public function render_force_license_refresh_action() {
+		$utility_id = 'force_license_refresh';
+		$working    = __( 'Refreshing…', 'themeisle-tester' );
+		$help       = __( 'Clears ti_license_cache and POSTs to /wp-json/ti/v1/license/refresh.', 'themeisle-tester' );
+
+		?>
+		<form
+			method="post"
+			class="ttp-card__toolbar-form"
+			data-ttp-license-refresh-toolbar
+			data-ttp-license-refresh-form
+			<?php echo $this->datastar->datastar_post_attr( 'utilities/' . $utility_id . '/run' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper. ?>
+		>
+			<?php wp_nonce_field( 'ttp_admin_action', 'ttp_nonce' ); ?>
+			<input type="hidden" name="ttp_action" value="run_utility">
+			<input type="hidden" name="ttp_item_id" value="<?php echo esc_attr( $utility_id ); ?>">
+			<span class="ttp-card__toolbar-lead"><?php esc_html_e( 'License cache', 'themeisle-tester' ); ?></span>
+			<button
+				type="submit"
+				class="button button-secondary button-small"
+				data-ttp-license-refresh-submit
+				data-ttp-default-label="<?php echo esc_attr__( 'Force refresh', 'themeisle-tester' ); ?>"
+				data-ttp-working-label="<?php echo esc_attr( $working ); ?>"
+				title="<?php echo esc_attr( $help ); ?>"
+			>
+				<?php esc_html_e( 'Force refresh', 'themeisle-tester' ); ?>
+			</button>
+			<span class="ttp-card__toolbar-status" data-ttp-license-refresh-status role="status" aria-live="polite" hidden data-ttp-working-label="<?php echo esc_attr( $working ); ?>"></span>
+		</form>
+		<?php
+	}
+
+	/**
 	 * Render Danger Utility restore form.
 	 *
 	 * @phpstan-param NormalizedItem $item

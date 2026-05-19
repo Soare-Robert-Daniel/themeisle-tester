@@ -35,6 +35,10 @@ class TTP_Schema_Sanitizer {
 			$value   = isset( $params[ $id ] ) ? $params[ $id ] : '';
 			$allowed = isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array();
 
+			if ( $this->should_apply_field_default( $value, $type ) && array_key_exists( 'default', $field ) ) {
+				$value = $field['default'];
+			}
+
 			$sanitized_value = $this->sanitize_value( $value, $type, $allowed );
 
 			if ( is_wp_error( $sanitized_value ) ) {
@@ -141,5 +145,28 @@ class TTP_Schema_Sanitizer {
 		}
 
 		return sanitize_text_field( is_scalar( $value ) ? (string) $value : '' );
+	}
+
+	/**
+	 * Whether an empty posted value should fall back to the field default.
+	 *
+	 * @param mixed  $value Raw param value.
+	 * @param string $type  Field type.
+	 * @return bool
+	 */
+	private function should_apply_field_default( $value, $type ) {
+		if ( 'toggle' === $type || 'boolean' === $type ) {
+			return false;
+		}
+
+		if ( 'integer' === $type || 'number' === $type ) {
+			return ! is_numeric( $value );
+		}
+
+		if ( is_string( $value ) ) {
+			return '' === $value;
+		}
+
+		return ! is_scalar( $value ) || '' === (string) $value;
 	}
 }

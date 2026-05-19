@@ -30,7 +30,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     is_available: callable|null,
  *     unavailable_reason_callback: callable|null,
  *     unavailable_reason: string,
- *     available: bool
+ *     available: bool,
+ *     dashboard_hidden: bool,
+ *     requires: array<string,array<string,string>>
  * }
  */
 class TTP_Item_Registry {
@@ -199,6 +201,10 @@ class TTP_Item_Registry {
 		$categories = array();
 
 		foreach ( $this->get_items() as $item ) {
+			if ( ! empty( $item['dashboard_hidden'] ) ) {
+				continue;
+			}
+
 			foreach ( $item['categories'] as $category ) {
 				if ( ! isset( $categories[ $category ] ) ) {
 					$categories[ $category ] = array();
@@ -311,6 +317,8 @@ class TTP_Item_Registry {
 			'unavailable_reason_callback' => isset( $item['unavailable_reason'] ) && is_callable( $item['unavailable_reason'] ) ? $item['unavailable_reason'] : null,
 			'unavailable_reason'          => '',
 			'available'                   => true,
+			'dashboard_hidden'            => ! empty( $item['dashboard_hidden'] ),
+			'requires'                    => TTP_Integration_Checks::normalize_requires( $item['requires'] ?? null ),
 		);
 	}
 
@@ -343,11 +351,18 @@ class TTP_Item_Registry {
 	 */
 	private function with_availability( $item ) {
 		$available       = true;
+		$reason          = '';
 		$is_available_cb = $item['is_available'];
 		$reason_callback = $item['unavailable_reason_callback'];
+		$requires        = $item['requires'];
+
+		if ( ! empty( $requires ) && ! TTP_Integration_Checks::meets_requirements( $requires ) ) {
+			$available = false;
+			$reason    = TTP_Integration_Checks::unavailable_reason_for_requirements( $requires );
+		}
 
 		if ( null !== $is_available_cb ) {
-			$available = (bool) call_user_func( $is_available_cb, $item );
+			$available = $available && (bool) call_user_func( $is_available_cb, $item );
 		}
 
 		/**
@@ -360,9 +375,7 @@ class TTP_Item_Registry {
 		 */
 		$available = (bool) apply_filters( 'ttp_item_available', $available, $item );
 
-		$reason = '';
-
-		if ( ! $available && null !== $reason_callback ) {
+		if ( ! $available && '' === $reason && null !== $reason_callback ) {
 			$raw_reason = call_user_func( $reason_callback, $item );
 			$reason     = is_string( $raw_reason ) ? $raw_reason : '';
 		}

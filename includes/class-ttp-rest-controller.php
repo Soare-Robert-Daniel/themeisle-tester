@@ -246,10 +246,86 @@ class TTP_REST_Controller {
 		if ( is_array( $ttp_params ) ) {
 			$raw = map_deep( $ttp_params, 'sanitize_textarea_field' );
 
-			return $this->clean_string_keyed_array( is_array( $raw ) ? $raw : array() );
+			$params = $this->clean_string_keyed_array( is_array( $raw ) ? $raw : array() );
+
+			return $this->merge_progressive_control_params( $request, $params );
 		}
 
 		return array();
+	}
+
+	/**
+	 * Merge WooCommerce progressive-run control params from the request body.
+	 *
+	 * @param WP_REST_Request     $request Request.
+	 * @param array<string,mixed> $params  Sanitized field params.
+	 * @return array<string,mixed>
+	 */
+	private function merge_progressive_control_params( WP_REST_Request $request, array $params ) {
+		$control_keys = array( 'ttp_product_index', 'ttp_total', 'ttp_batch' );
+
+		foreach ( $control_keys as $key ) {
+			$value = $request->get_param( $key );
+
+			if ( null === $value ) {
+				continue;
+			}
+
+			if ( is_scalar( $value ) ) {
+				if ( 'ttp_batch' === $key ) {
+					$params[ $key ] = sanitize_text_field( (string) $value );
+				} elseif ( is_numeric( $value ) ) {
+					$params[ $key ] = absint( $value );
+				}
+			}
+		}
+
+		return $params;
+	}
+
+	/**
+	 * Build a Utility run payload from JSON, multipart form, or full request params.
+	 *
+	 * Ensures field values are flattened (not left under `ttp_params`) and that
+	 * WooCommerce progressive control keys are always present when sent.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string,mixed>
+	 */
+	private function build_utility_run_payload( WP_REST_Request $request ) {
+		$payload = $this->parse_params_from_request( $request );
+
+		if ( empty( $payload ) ) {
+			$payload = $this->get_payload( $request );
+			unset( $payload['ttp_nonce'], $payload['ttp_action'], $payload['ttp_item_id'] );
+		}
+
+		$payload = $this->flatten_nested_ttp_params( $payload );
+
+		return $this->merge_progressive_control_params( $request, $payload );
+	}
+
+	/**
+	 * Hoist nested `ttp_params` field values to the top level of the payload.
+	 *
+	 * @param array<string,mixed> $payload Raw payload.
+	 * @return array<string,mixed>
+	 */
+	private function flatten_nested_ttp_params( array $payload ) {
+		if ( ! isset( $payload['ttp_params'] ) || ! is_array( $payload['ttp_params'] ) ) {
+			return $payload;
+		}
+
+		$nested = $payload['ttp_params'];
+		unset( $payload['ttp_params'] );
+
+		foreach ( $nested as $key => $value ) {
+			if ( is_string( $key ) && ! array_key_exists( $key, $payload ) ) {
+				$payload[ $key ] = $value;
+			}
+		}
+
+		return $payload;
 	}
 
 	/**
@@ -412,11 +488,7 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		$payload = $this->parse_params_from_request( $request );
-
-		if ( empty( $payload ) ) {
-			$payload = $this->get_payload( $request );
-		}
+		$payload = $this->build_utility_run_payload( $request );
 
 		$result = $this->dashboard_actions->run_utility( $item, $payload );
 

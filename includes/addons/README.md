@@ -9,14 +9,17 @@ addons/
   manifest.php          # require_once list — add new addon files here
   sdk/                  # Shared SDK scenarios + Danger Utilities
   wordpress/            # WordPress admin utilities
+  ppom/                 # PPOM for WooCommerce inspect utilities
+  woocommerce/          # WooCommerce product fixture utilities
 ```
 
 ## Adding an addon
 
 1. Create `includes/addons/{name}/class-ttp-addon-{name}.php` implementing `TTP_Addon`.
-2. Register items in `register_hooks()` on `ttp_register_items` (call `$registry->register( array( ... ) )`).
-3. Add the file to `manifest.php`.
-4. Document the addon in `docs/adr/` if it introduces a new pattern.
+2. Register items in `register()` (call `$registry->register( array( ... ) )`).
+3. Declare external APIs with `requires` (classes, functions, capabilities) or reuse presets from `TTP_Integration_Checks::require_*()`. The registry verifies them before rendering or running callbacks.
+4. Add the file to `manifest.php`.
+5. Document the addon in `docs/adr/` if it introduces a new pattern.
 
 ## SDK hook priorities
 

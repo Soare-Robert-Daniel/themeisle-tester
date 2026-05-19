@@ -71,6 +71,14 @@ class TTP_Admin_Form_Handler {
 			return;
 		}
 
+		if ( empty( $item['available'] ) ) {
+			$reason              = '' !== $item['unavailable_reason']
+				? $item['unavailable_reason']
+				: __( 'Testing Item is unavailable.', 'themeisle-tester' );
+			$this->action_result = new WP_Error( 'ttp_item_unavailable', $reason );
+			return;
+		}
+
 		if ( 'save_scenario' === $action ) {
 			$enabled             = ! empty( $_POST['ttp_enabled'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
 			$this->action_result = $this->dashboard_actions->save_scenario( $item, $enabled, $this->get_post_payload() );
@@ -122,19 +130,30 @@ class TTP_Admin_Form_Handler {
 	 * @return array<string,mixed>
 	 */
 	private function get_post_payload() {
-		if ( empty( $_POST['ttp_params'] ) || ! is_array( $_POST['ttp_params'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
-			return array();
-		}
-
-		$raw   = map_deep( wp_unslash( $_POST['ttp_params'] ), 'sanitize_textarea_field' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
 		$clean = array();
 
-		if ( is_array( $raw ) ) {
-			foreach ( $raw as $key => $value ) {
-				if ( is_string( $key ) ) {
-					$clean[ $key ] = $value;
+		if ( ! empty( $_POST['ttp_params'] ) && is_array( $_POST['ttp_params'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
+			$raw = map_deep( wp_unslash( $_POST['ttp_params'] ), 'sanitize_textarea_field' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
+
+			if ( is_array( $raw ) ) {
+				foreach ( $raw as $key => $value ) {
+					if ( is_string( $key ) ) {
+						$clean[ $key ] = $value;
+					}
 				}
 			}
+		}
+
+		foreach ( array( 'ttp_product_index', 'ttp_total' ) as $key ) {
+			if ( ! isset( $_POST[ $key ] ) || ! is_numeric( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
+				continue;
+			}
+
+			$clean[ $key ] = absint( wp_unslash( $_POST[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
+		}
+
+		if ( isset( $_POST['ttp_batch'] ) && is_scalar( $_POST['ttp_batch'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
+			$clean['ttp_batch'] = sanitize_text_field( wp_unslash( (string) $_POST['ttp_batch'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in handle_post().
 		}
 
 		return $clean;

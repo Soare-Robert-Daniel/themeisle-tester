@@ -255,12 +255,12 @@ Rules:
 │                     "Themeisle Tester"                      │
 │                     "Create, inspect, and reset…"           │
 │                                                             │
-│  Tabs (underline)   Scenarios   Utilities   Danger          │
-│                     ─────────                               │
-│                                                             │
-│  Panel              GROUP HEADING (tracked uppercase 11px)  │
-│                     ┌─Card─┐ ┌─Card─┐ ┌─Card─┐              │
-│                     └──────┘ └──────┘ └──────┘              │
+│  Sidebar │ Panel    │ Cat A  (active rail)                     │
+│          │          │ Cat B                                    │
+│          │          │ ───────────────────────────────────────  │
+│          │          │ GROUP HEADING (tracked uppercase 11px)   │
+│          │          │ ┌─Card─┐ ┌─Card─┐ ┌─Card─┐               │
+│          │          │ └──────┘ └──────┘ └──────┘               │
 │                                                             │
 │                     GROUP HEADING                           │
 │                     ┌─Card─┐ ┌─Card─┐                       │
@@ -275,8 +275,9 @@ Rules:
 
 | Between                                | Token             | Value |
 |----------------------------------------|-------------------|-------|
-| Header → tabs                          | `--ttp-space-4`   | 16px  |
-| Tabs → first group heading             | `--ttp-space-5`   | 24px  |
+| Header → layout (sidebar + panels)     | `--ttp-space-4`   | 16px  |
+| Sidebar → panel content (grid gap)     | `--ttp-space-5`   | 24px  |
+| Sidebar nav → first group heading      | (panel internal)  | —     |
 | Group heading → card grid              | `--ttp-space-3`   | 12px  |
 | Between groups                         | `--ttp-space-6`   | 32px  |
 | Card grid gap                          | `--ttp-space-4`   | 16px  |
@@ -374,27 +375,31 @@ Implementation:
 Variants: `--scenario` (success), `--utility` (accent), `--danger_utility`
 (danger), `--active` (success + status dot).
 
-### Tabs (underline)
+### Tabs (vertical sidebar)
 
 ```
-Scenarios    Utilities    Danger
-─────────                       
-────────────────────────────────  ← hairline divider
-active = accent text + 2px accent underline
+│ Scenarios      ● │
+│ Utilities        │  ← sticky nav; gap separates from panels
+│ Danger           │
+└──────────────────┘
+active = accent rail + accent-bg fill
 ```
 
-- Container: flex row, no background, no border except a hairline
-  `--ttp-border-hair` bottom divider; tabs overlap it via `margin-bottom: -1px`.
-- Inactive tab: text-only, `--ttp-text-muted`, weight-medium.
-- Hover: ink → `--ttp-text`, faint `--ttp-border` underline preview.
-- Active tab: `--ttp-accent-strong` text + 2px `--ttp-accent` underline,
-  weight-semibold.
+- Layout: `.ttp-layout` grid — sidebar column (`minmax(11rem, 13.5rem)`) +
+  main panel column, separated by grid gap only (no nav divider border). Nav is
+  `position: sticky` with vertical scroll when long.
+- Tablist: `aria-orientation="vertical"`; full-width buttons, left-aligned labels.
+- Inactive tab: `--ttp-text-muted`, weight-medium, transparent left rail.
+- Hover: `--ttp-bg-muted` fill, `--ttp-border` left rail preview.
+- Active tab: `--ttp-accent-strong` text, `--ttp-accent-bg` fill,
+  3px `--ttp-accent` left rail, weight-semibold.
 - Per-tab counts have been removed; an active-scenario dot
   (`.ttp-tab__indicator`, `--ttp-success` on `--ttp-success-bg`) appears
-  next to the label when a category has any active scenarios.
+  at the end of the row when a category has any active scenarios.
 - Focus ring: `--ttp-focus-ring` with `--ttp-radius-sm` corners.
-- Keyboard contract preserved from `admin/js/dashboard.js`
-  (`role=tab`, `aria-selected`, arrow keys, Home/End).
+- Keyboard: `admin/js/dashboard.js` uses ArrowUp/ArrowDown when vertical
+  (`role=tab`, `aria-selected`, Home/End). Below 782px the layout stacks:
+  sidebar on top, panels below (nav is no longer sticky).
 
 ### Buttons
 

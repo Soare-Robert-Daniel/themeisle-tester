@@ -57,11 +57,24 @@ SDK addon (`includes/addons/sdk/`):
 - Scenario: swap Black Friday sale URL domains through `themeisle_sdk_blackfriday_data`.
 - Utility: clear the current user's Black Friday dismissed notice.
 - Utility: provide Black Friday quick date helpers for sale start, Black Friday, and sale end.
-- Danger Utilities (ported from `../test-black-friday`): license data scanner/editor for `*_license_data` options; install timestamp scanner/editor for `*_install` options.
+- Danger Utilities (ported from `../test-black-friday`): license data scanner/editor for `*_license_data` options; install timestamp scanner/editor for `*_install` options (includes embedded force license refresh: clears `ti_license_cache`, POSTs `ti/v1/license/refresh`).
+- Utility (dashboard-hidden, embedded in install timestamp card): force license refresh.
+- Utility (`includes/addons/sdk/logger/`): logger inspector — read-only view of each SDK product’s `{key}_logger_flag` consent, `{key}_logger_data` payload, scheduled `{key}_log_activity` cron, and JS telemetry queue (mirrors `ThemeisleSDK\Modules\Logger`). Inline **Send log now** / **Send all active logs** buttons POST the same payload shape as `Logger::send_log()` to `api.themeisle.com/tracking/log` for QA.
 
 WordPress addon (`includes/addons/wordpress/`):
 
-- Utility: install (and optionally activate) plugins from ZIP URLs.
+- Utility: install plugins — quick-install shortcuts for curated plugins (catalog in `ttp-popular-plugins-catalog.php`) plus custom ZIP URL installs.
+
+PPOM addon (`includes/addons/ppom/`):
+
+- Utility: inspect field groups — read-only list of all PPOM field group rows from `{prefix}nm_personalized`, including decoded field definitions and raw `the_meta` JSON.
+- `requires`: `TTP_Integration_Checks::require_ppom()` (WooCommerce product classes + `ppom_meta_repository()`).
+
+WooCommerce addon (`includes/addons/woocommerce/`):
+
+- Utility: generate random products — bulk-create simple or variable WooCommerce products with randomized names, SKUs, and prices; optional attribute DSL for variations; products tagged with `_ttp_generated` meta.
+- `requires`: `TTP_Integration_Checks::require_woocommerce_products()` (WooCommerce product classes + `edit_products`).
+- Utility: delete generated products — permanently removes all products tagged by Themeisle Tester.
 
 Danger Utilities must warn clearly before mutation and store a backup before the first change so reset can restore the original values.
 

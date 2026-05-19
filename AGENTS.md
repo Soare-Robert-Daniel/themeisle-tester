@@ -54,8 +54,9 @@ add_action( 'ttp_register_items', function ( $registry ) {
         'group'              => 'Optional Sub-group',
         'width'              => 'normal',        // 'normal' | 'wide' | 'full' — grid span; default 'normal' (or 'full' for danger_utility). See docs/design-system.md §Page anatomy.
         'fields'             => array( /* see Field types below */ ),
-        'is_available'       => 'callable',     // returns bool
-        'unavailable_reason' => 'callable',     // returns string shown when unavailable
+        'requires'           => array( /* external APIs — see below */ ),
+        'is_available'       => 'callable',     // optional extra gate; ANDed with `requires`
+        'unavailable_reason' => 'callable',     // optional; used when unavailable and `requires` did not set a reason
 
         // === behavior callbacks, required by type ===
         // scenario        → 'apply'
@@ -69,6 +70,8 @@ add_action( 'ttp_register_items', function ( $registry ) {
     ) );
 } );
 ```
+
+**`requires`** — declare external classes, functions, and capabilities before callbacks run. Keys: `classes`, `functions`, `capabilities` (each a map of symbol => unavailable message). The registry checks them at finalize/render time; REST, form POST, and Dashboard actions also block when unmet. Reuse presets from `TTP_Integration_Checks::require_*()` for WooCommerce/PPOM addons.
 
 Per-item filters (no class needed):
 

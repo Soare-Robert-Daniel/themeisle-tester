@@ -79,6 +79,12 @@ class TTP_Dashboard_Actions {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function save_scenario( $item, $enabled, $params ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $this->record_and_return( $item, __( 'Save Scenario', 'themeisle-tester' ), $availability, array() );
+		}
+
 		$params = $this->schema_sanitizer->sanitize_params( $item, $params );
 
 		if ( is_wp_error( $params ) ) {
@@ -143,6 +149,12 @@ class TTP_Dashboard_Actions {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function run_utility( $item, $payload ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $this->record_and_return( $item, __( 'Run Utility', 'themeisle-tester' ), $availability, array() );
+		}
+
 		if ( ! is_callable( $item['run'] ) ) {
 			return $this->record_and_return( $item, __( 'Run Utility', 'themeisle-tester' ), new WP_Error( 'ttp_utility_not_runnable', __( 'This Utility does not provide an action.', 'themeisle-tester' ), array( 'status' => 400 ) ), array() );
 		}
@@ -182,6 +194,12 @@ class TTP_Dashboard_Actions {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function mutate_danger( $item, $target, $params ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $this->record_and_return( $item, __( 'Mutate Danger Utility', 'themeisle-tester' ), $availability, $this->target_details( $target ) );
+		}
+
 		$applicator = new TTP_Hook_Applicator( $this->registry, $this->scenario_store );
 
 		if ( ! $applicator->is_runtime_enabled() ) {
@@ -255,6 +273,12 @@ class TTP_Dashboard_Actions {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function restore_danger( $item, $target ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $this->record_and_return( $item, __( 'Restore Danger Utility', 'themeisle-tester' ), $availability, $this->target_details( $target ) );
+		}
+
 		if ( '' === $target ) {
 			return $this->record_and_return( $item, __( 'Restore Danger Utility', 'themeisle-tester' ), new WP_Error( 'ttp_missing_target', __( 'Danger Utility restore requires a target.', 'themeisle-tester' ), array( 'status' => 400 ) ), array() );
 		}
@@ -462,5 +486,25 @@ class TTP_Dashboard_Actions {
 		}
 
 		return $strings;
+	}
+
+	/**
+	 * Return an error when a Testing Item is marked unavailable.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item Item.
+	 * @return WP_Error|null
+	 */
+	private function availability_error( $item ) {
+		if ( ! empty( $item['available'] ) ) {
+			return null;
+		}
+
+		$reason = '' !== $item['unavailable_reason']
+			? $item['unavailable_reason']
+			: __( 'Testing Item is unavailable.', 'themeisle-tester' );
+
+		return new WP_Error( 'ttp_item_unavailable', $reason, array( 'status' => 400 ) );
 	}
 }

@@ -20,7 +20,10 @@ class TTP_Addon_Loader {
 	 * @var array<int,array{class-string<TTP_Addon>,int}>
 	 */
 	private $addons = array(
+		array( TTP_Addon_SDK_Logger::class, 22 ),
 		array( TTP_Addon_WordPress::class, 50 ),
+		array( TTP_Addon_PPOM::class, 60 ),
+		array( TTP_Addon_WooCommerce::class, 70 ),
 	);
 
 	/**

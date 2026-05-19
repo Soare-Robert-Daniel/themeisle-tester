@@ -35,8 +35,13 @@ class TTP_Field_Renderer {
 			$type        = isset( $field['type'] ) && is_string( $field['type'] ) ? sanitize_key( $field['type'] ) : 'text';
 			$label_value = isset( $field['label'] ) && is_string( $field['label'] ) ? $field['label'] : $id;
 			$raw_value   = isset( $params[ $id ] ) ? $params[ $id ] : '';
-			$value       = is_scalar( $raw_value ) ? (string) $raw_value : '';
-			$control_id  = 'ttp-' . $item['id'] . '-' . $id;
+
+			if ( $this->should_apply_field_default( $raw_value, $type ) && array_key_exists( 'default', $field ) ) {
+				$raw_value = $field['default'];
+			}
+
+			$value      = is_scalar( $raw_value ) ? (string) $raw_value : '';
+			$control_id = 'ttp-' . $item['id'] . '-' . $id;
 
 			if ( 'toggle' === $type || 'boolean' === $type ) {
 				$checked = filter_var( $raw_value, FILTER_VALIDATE_BOOLEAN );
@@ -70,7 +75,12 @@ class TTP_Field_Renderer {
 				}
 				echo '</select>';
 			} else {
-				$input_type = in_array( $type, array( 'date', 'url', 'email', 'number' ), true ) ? $type : 'text';
+				$input_type = in_array( $type, array( 'date', 'url', 'email', 'number', 'integer' ), true ) ? $type : 'text';
+
+				if ( 'integer' === $input_type ) {
+					$input_type = 'number';
+				}
+
 				echo '<input id="' . esc_attr( $control_id ) . '" type="' . esc_attr( $input_type ) . '" name="ttp_params[' . esc_attr( $id ) . ']" value="' . esc_attr( $value ) . '">';
 			}
 
@@ -133,5 +143,28 @@ class TTP_Field_Renderer {
 		echo '</div>';
 		echo '</template>';
 		echo '</div>';
+	}
+
+	/**
+	 * Whether an empty posted value should fall back to the field default.
+	 *
+	 * @param mixed  $raw_value Raw param value.
+	 * @param string $type      Field type.
+	 * @return bool
+	 */
+	private function should_apply_field_default( $raw_value, $type ) {
+		if ( 'toggle' === $type || 'boolean' === $type ) {
+			return false;
+		}
+
+		if ( 'integer' === $type || 'number' === $type ) {
+			return ! is_numeric( $raw_value );
+		}
+
+		if ( is_string( $raw_value ) ) {
+			return '' === $raw_value;
+		}
+
+		return ! is_scalar( $raw_value ) || '' === (string) $raw_value;
 	}
 }

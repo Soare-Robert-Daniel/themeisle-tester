@@ -108,6 +108,13 @@ class TTP_Admin_Page {
 	private $danger_table_renderer;
 
 	/**
+	 * Popular plugins table renderer.
+	 *
+	 * @var TTP_Popular_Plugins_Renderer
+	 */
+	private $popular_plugins_renderer;
+
+	/**
 	 * Activity log renderer.
 	 *
 	 * @var TTP_Activity_Renderer
@@ -120,6 +127,27 @@ class TTP_Admin_Page {
 	 * @var TTP_Inspect_Result_Renderer
 	 */
 	private $inspect_result_renderer;
+
+	/**
+	 * PPOM field-group inspect renderer.
+	 *
+	 * @var TTP_PPOM_Inspect_Renderer
+	 */
+	private $ppom_inspect_renderer;
+
+	/**
+	 * SDK logger inspect renderer.
+	 *
+	 * @var TTP_Logger_Inspect_Renderer
+	 */
+	private $logger_inspect_renderer;
+
+	/**
+	 * Renderer for the PPOM free-fields last-generated panel.
+	 *
+	 * @var TTP_PPOM_Last_Target_Renderer
+	 */
+	private $ppom_last_target_renderer;
 
 	/**
 	 * Scenario saved-summary renderer.
@@ -150,8 +178,12 @@ class TTP_Admin_Page {
 		$this->field_renderer            = new TTP_Field_Renderer();
 		$this->flash_renderer            = new TTP_Flash_Renderer();
 		$this->danger_table_renderer     = new TTP_Danger_Table_Renderer( $this->datastar, $this->backup_store );
+		$this->popular_plugins_renderer  = new TTP_Popular_Plugins_Renderer( $this->datastar );
 		$this->activity_renderer         = new TTP_Activity_Renderer( $this->activity_store );
 		$this->inspect_result_renderer   = new TTP_Inspect_Result_Renderer();
+		$this->ppom_inspect_renderer     = new TTP_PPOM_Inspect_Renderer();
+		$this->logger_inspect_renderer   = new TTP_Logger_Inspect_Renderer( $this->datastar );
+		$this->ppom_last_target_renderer = new TTP_PPOM_Last_Target_Renderer();
 		$this->scenario_summary_renderer = new TTP_Scenario_Summary_Renderer();
 	}
 
@@ -382,6 +414,15 @@ class TTP_Admin_Page {
 	}
 
 	/**
+	 * Render the embedded force license refresh toolbar (license / install editor cards).
+	 *
+	 * @return void
+	 */
+	public function render_force_license_refresh_action() {
+		$this->danger_table_renderer->render_force_license_refresh_action();
+	}
+
+	/**
 	 * Render install rows.
 	 *
 	 * @phpstan-param NormalizedItem $item
@@ -392,6 +433,19 @@ class TTP_Admin_Page {
 	 */
 	public function render_install_rows( $item, $rows ) {
 		$this->danger_table_renderer->render_install_rows( $item, $rows );
+	}
+
+	/**
+	 * Render quick-install shortcuts for the install utility card.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item      Item.
+	 * @param array<mixed>        $shortcuts Shortcut rows from inspect.
+	 * @return void
+	 */
+	public function render_plugin_install_shortcuts( $item, $shortcuts ) {
+		$this->popular_plugins_renderer->render_plugin_install_shortcuts( $item, $shortcuts );
 	}
 
 	/**
@@ -432,5 +486,35 @@ class TTP_Admin_Page {
 	 */
 	public function render_result_table( $result ) {
 		$this->inspect_result_renderer->render_result_table( $result );
+	}
+
+	/**
+	 * Render PPOM field-group inspect output.
+	 *
+	 * @param mixed $result Inspect callback result.
+	 * @return void
+	 */
+	public function render_ppom_field_groups( $result ) {
+		$this->ppom_inspect_renderer->render_field_groups_result( $result );
+	}
+
+	/**
+	 * Render SDK logger inspect output.
+	 *
+	 * @param mixed $result Inspect callback result.
+	 * @return void
+	 */
+	public function render_logger_inspect( $result ) {
+		$this->logger_inspect_renderer->render_logger_result( $result );
+	}
+
+	/**
+	 * Render the PPOM free-fields "last generated" inline panel.
+	 *
+	 * @param mixed $result Inspect callback result.
+	 * @return void
+	 */
+	public function render_ppom_last_target( $result ) {
+		$this->ppom_last_target_renderer->render( $result );
 	}
 }
