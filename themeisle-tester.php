@@ -27,16 +27,34 @@ $ttp_files = array(
 	'includes/class-ttp-item-registry.php',
 	'includes/class-ttp-scenario-store.php',
 	'includes/class-ttp-danger-backup-store.php',
+	'includes/class-ttp-activity-store.php',
 	'includes/class-ttp-hook-applicator.php',
-	'includes/class-ttp-bundled-items.php',
+	'includes/interface-ttp-addon.php',
+	'includes/class-ttp-addon-loader.php',
+	'includes/class-ttp-dashboard-actions.php',
+	'includes/class-ttp-rest-html.php',
 	'includes/class-ttp-rest-controller.php',
+	'admin/class-ttp-view-loader.php',
+	'admin/class-ttp-dashboard-layout-renderer.php',
+	'admin/class-ttp-admin-form-handler.php',
+	'admin/class-ttp-admin-assets.php',
+	'admin/class-ttp-datastar.php',
+	'admin/class-ttp-field-renderer.php',
+	'admin/class-ttp-flash-renderer.php',
+	'admin/class-ttp-danger-table-renderer.php',
+	'admin/class-ttp-activity-renderer.php',
+	'admin/class-ttp-inspect-result-renderer.php',
+	'admin/class-ttp-scenario-summary-renderer.php',
 	'admin/class-ttp-admin-notices.php',
 	'admin/class-ttp-admin-page.php',
+	'includes/class-ttp-dashboard-renderer.php',
 	'includes/class-ttp-plugin.php',
 );
 
 foreach ( $ttp_files as $ttp_file ) {
 	require_once TTP_PLUGIN_DIR . $ttp_file;
 }
+
+TTP_Addon_Loader::load_addon_files();
 
 TTP_Plugin::instance()->init();

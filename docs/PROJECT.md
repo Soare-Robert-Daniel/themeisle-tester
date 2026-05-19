@@ -11,12 +11,12 @@ Themeisle Tester provides the testing platform:
 - a WordPress admin Dashboard rendered entirely by PHP;
 - a Registry where Products declare Scenarios and Utilities;
 - global per-site Scenario state;
-- REST endpoints for saving, resetting, and on-demand inspection (used by tooling; the Dashboard itself posts to PHP);
-- bundled shared SDK testing items.
+- REST endpoints for saving, resetting, and on-demand inspection (JSON for tooling; the Dashboard uses the same routes with `Datastar-Request` / `Accept: text/html` for HTML morph responses);
+- first-party Testing Items under `includes/addons/` (SDK, WordPress, and future product integrations).
 
-Product plugins provide product-specific behavior:
+Product plugins may provide additional product-specific behavior when needed:
 
-- they register their own Scenarios and Utilities through `ttp_register_items`;
+- register Scenarios and Utilities through `ttp_register_items` for items not yet in an internal addon;
 - they expose hooks/filters where non-destructive Scenarios can apply runtime changes;
 - they may enqueue optional Dashboard-only scripts through `ttp_enqueue_controls` (a forward-compatibility hook; v1 does not ship a Control registry).
 
@@ -36,8 +36,8 @@ Themeisle Tester is not:
 The Dashboard is fully PHP-rendered, with a small vanilla-JS enhancement for tab navigation (see [ADR-0006](adr/0006-server-render-the-dashboard.md)).
 
 - PHP renders the Dashboard shell, Categories, and every Testing Item card.
-- Forms post back to PHP; `TTP_Admin_Page::handle_post()` validates the nonce, sanitizes through `TTP_Schema_Sanitizer`, and writes through the stores.
-- The only client code is `admin/js/dashboard.js`, which switches the visible tab panel, handles keyboard navigation, and syncs the active tab to the URL hash.
+- Forms post through Datastar to `ttp/v1` REST routes (HTML morph) or fall back to classic PHP POST (`TTP_Admin_Page::handle_post()` when JS is off). Both paths use `TTP_Dashboard_Actions` and `TTP_Schema_Sanitizer`.
+- `admin/js/libs/datastar.min.js` patches cards, flash, and tab indicators in place; `admin/js/dashboard.js` handles tab panels and `data-ttp-list` rows.
 - Active Scenarios are shown in a sticky admin notice outside the Dashboard so testers do not forget runtime behavior has been overridden.
 - Internal code should stay modest: prefer a small registry, store, applicator, admin, and REST layer before introducing extra factories, commands, or serializers.
 - Product plugins must extend Themeisle Tester through public hooks and callbacks, not by reaching into internal classes.
@@ -51,17 +51,17 @@ Public API naming follows the `ttp` prefix:
 
 ## V1 Testing Items
 
-Bundled shared SDK items:
+SDK addon (`includes/addons/sdk/`):
 
 - Scenario: override SDK current date through `themeisle_sdk_current_date`.
 - Scenario: swap Black Friday sale URL domains through `themeisle_sdk_blackfriday_data`.
 - Utility: clear the current user's Black Friday dismissed notice.
 - Utility: provide Black Friday quick date helpers for sale start, Black Friday, and sale end.
+- Danger Utilities (ported from `../test-black-friday`): license data scanner/editor for `*_license_data` options; install timestamp scanner/editor for `*_install` options.
 
-Bundled Danger Utilities ported from `../test-black-friday`:
+WordPress addon (`includes/addons/wordpress/`):
 
-- license data scanner/editor for `*_license_data` options;
-- install timestamp scanner/editor for `*_install` options.
+- Utility: install (and optionally activate) plugins from ZIP URLs.
 
 Danger Utilities must warn clearly before mutation and store a backup before the first change so reset can restore the original values.
 

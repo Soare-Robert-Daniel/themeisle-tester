@@ -3,7 +3,7 @@
 ## Public API
 
 - Keep product-facing APIs boring: plain arrays, callbacks, and WordPress hooks.
-- Product plugins must not depend on internal classes.
+- Product plugins must not depend on internal platform classes or on `includes/addons/` (`TTP_Addon`, `TTP_Addon_Loader`, `TTP_Addon_*` feature classes). Those paths are for first-party code inside Themeisle Tester only; external plugins extend through `ttp_register_items` and documented `ttp_*` hooks.
 - Treat REST routes as Dashboard UI endpoints, not as the product extension API.
 - Use stable Testing Item IDs; once shipped, IDs should not change because state, backups, REST requests, and UI keys depend on them.
 - Document every public `do_action()` and `apply_filters()` call at the call site with who should use it and when it fires.
@@ -59,7 +59,7 @@
 
 ## Testing
 
-- Add contract tests for the extension API before relying on product integrations.
+- PHPUnit contract tests are not wired yet; static analysis (`composer run phpstan`) and linters are the current gate. Add contract tests for the extension API before relying heavily on product integrations in CI.
 - Cover at least these cases:
   - a fake Product registers a valid Testing Item;
   - an invalid item is rejected with a useful reason;

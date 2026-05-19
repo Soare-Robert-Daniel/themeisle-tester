@@ -33,7 +33,7 @@ A React field component used to edit a value inside a Scenario or Utility card.
 _Avoid_: widget, field renderer, component
 
 **Registry**:
-The extension point where Products declare their Scenarios and Utilities.
+The extension point where Testing Items are declared—primarily by internal addons under `includes/addons/`, and optionally by product plugins on `ttp_register_items`.
 _Avoid_: loader, container, manager
 
 **Testing Item**:
@@ -46,12 +46,12 @@ _Avoid_: module, card
 - A **Category** contains one or more **Testing Items**.
 - A **Testing Item** is either a **Scenario** or a **Utility**.
 - A **Danger Utility** is a specialized **Utility**.
-- A **Product** may register many **Testing Items**.
+- Themeisle Tester **internal addons** register most **Testing Items**; a **Product** plugin may register additional items when needed.
 - **Category** and **Product** are orthogonal: Category controls where an item appears in the Dashboard, while Product identifies who owns it.
 - A **Scenario** belongs to one **Product** and stores a controlled test condition.
 - A **Utility** may appear in multiple **Categories** when it provides useful quick access.
 - A **Control** edits one value within a **Testing Item**.
-- The **Registry** receives **Testing Items** from Products.
+- The **Registry** receives **Testing Items** from internal addons and, optionally, from product plugins.
 
 ## Example dialogue
 

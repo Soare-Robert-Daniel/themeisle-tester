@@ -107,6 +107,39 @@ class TTP_Schema_Sanitizer {
 			return esc_url_raw( is_scalar( $value ) ? (string) $value : '' );
 		}
 
+		if ( 'url_list' === $type ) {
+			$lines = array();
+
+			if ( is_array( $value ) ) {
+				foreach ( $value as $entry ) {
+					if ( is_string( $entry ) ) {
+						$lines[] = $entry;
+					}
+				}
+			} elseif ( is_string( $value ) ) {
+				$split = preg_split( '/\r\n|\r|\n/', $value );
+				$lines = is_array( $split ) ? $split : array();
+			}
+
+			$urls = array();
+
+			foreach ( $lines as $line ) {
+				$trimmed = trim( (string) $line );
+
+				if ( '' === $trimmed ) {
+					continue;
+				}
+
+				$clean = esc_url_raw( $trimmed );
+
+				if ( '' !== $clean ) {
+					$urls[] = $clean;
+				}
+			}
+
+			return $urls;
+		}
+
 		return sanitize_text_field( is_scalar( $value ) ? (string) $value : '' );
 	}
 }

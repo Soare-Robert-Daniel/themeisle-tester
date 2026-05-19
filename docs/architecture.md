@@ -20,13 +20,14 @@ It does not re-derive those docs; it shows the architecture they together descri
 
 Themeisle Tester is a hook-first WordPress admin platform. Products register **Testing Items** (Scenarios, Utilities, Danger Utilities) through the `ttp_register_items` action. The PHP platform validates and normalizes those definitions, persists Scenario state in Tester-owned options, applies enabled Scenarios at boot through their `apply` callback, and exposes a `ttp/v1` REST surface alongside the PHP-rendered **Dashboard**.
 
-The Dashboard is fully rendered by PHP (ADR-0006). Forms post back to PHP; `TTP_Admin_Page::handle_post()` validates nonces, sanitizes via `TTP_Schema_Sanitizer`, and writes through the stores. The only client-side code is `admin/js/dashboard.js`, a small vanilla-JS controller that switches the visible tab panel, handles keyboard navigation, and syncs the active tab to the URL hash. Product plugins extend the platform only through documented `ttp_*` hooks (ADR-0002).
+The Dashboard is fully rendered by PHP (ADR-0006). Card actions submit via Datastar to `ttp/v1` REST routes, which return HTML fragments morphed by id (`ttp-flash`, `ttp-card-{id}`, `ttp-tab-indicator-{slug}`); see ADR-0008. Classic form POST remains as a no-JS fallback through `TTP_Admin_Page::handle_post()`. Both paths delegate to `TTP_Dashboard_Actions`. `admin/js/dashboard.js` handles tabs and list fields only. First-party Testing Items register from `includes/addons/` via `TTP_Addon_Loader` (ADR-0009). Product plugins may add items through documented `ttp_*` hooks (ADR-0002) when an internal addon does not yet exist.
 
-The architecture has four layers:
+The architecture has five layers:
 
 | Layer | Responsibility |
 |---|---|
-| Product plugins | Register Testing Items via `ttp_register_items`; optionally enqueue Dashboard-only scripts via `ttp_enqueue_controls` (no v1 consumer). |
+| Internal addons (`includes/addons/`) | Primary source of Testing Items; `TTP_Addon_Loader` hooks each addon to `ttp_register_items` (SDK modules, WordPress addon, future folders). |
+| Product plugins | Optionally register edge-case Testing Items via `ttp_register_items`; may enqueue Dashboard-only scripts via `ttp_enqueue_controls` (no v1 consumer). |
 | Public hook surface (`ttp_*`) | Lifecycle, filtering, availability, state, scenario application, utility execution, danger mutation/restore, safety. |
 | PHP platform | Registry (with normalizer), Hook Applicator, Schema Sanitizer, REST Controller, Admin Page (renderer + form handler), Admin Notices. |
 | Storage | `ttp_scenario_state` (Scenario enable/params, autoload=false) and `ttp_danger_backups` (first-mutation backups, ADR-0005). |
@@ -53,7 +54,7 @@ flowchart LR
     WP -->|hosts admin Dashboard<br/>and REST API| Human
 ```
 
-**Boundary:** Themeisle Tester is not the owner of product behavior. It owns the testing platform, shared SDK items, runtime safety gates, and Dashboard experience. Product plugins own product-specific Scenarios and Utilities.
+**Boundary:** Themeisle Tester owns the testing platform, first-party integrations under `includes/addons/`, runtime safety gates, and the Dashboard experience. It is not the owner of product runtime behavior in general. Product plugins may still register additional Testing Items via `ttp_register_items` when an internal addon does not cover a case.
 
 ### Level 2 — Containers
 
@@ -67,28 +68,37 @@ flowchart TB
     end
 
     subgraph Tester["Themeisle Tester plugin"]
-        PHPPlatform[PHP platform<br/>bootstrap, registry, stores,<br/>applicator, REST, admin renderer + form handler]
+        PHPPlatform[PHP platform<br/>bootstrap, registry, stores,<br/>applicator, REST, dashboard actions]
+        AdminUI[admin presentation<br/>TTP_Admin_Page + layout/view/form/assets + card renderers]
         TabJS[admin/js/dashboard.js<br/>vanilla-JS tab controller]
+        subgraph InternalAddons["Internal addons"]
+            SDKAddon[SDK addon<br/>BF, surveys, licensing]
+            WPAddon[WordPress addon<br/>install from ZIP]
+        end
     end
 
-    subgraph Products["Themeisle products"]
-        ProductPHP[Product PHP code<br/>Testing Item schemas + callbacks]
+    subgraph Products["Themeisle products (optional)"]
+        ProductPHP[Product PHP<br/>edge-case Testing Items]
     end
 
-    PHPPlatform -->|renders shell + cards| Admin
+    AdminUI -->|renders shell + cards| Admin
     Admin -->|form POST + nonce| PHPPlatform
+    PHPPlatform --> AdminUI
     PHPPlatform --> REST
     PHPPlatform --> Options
     PHPPlatform --> Hooks
     Admin --- TabJS
 
+    SDKAddon -->|ttp_register_items via TTP_Addon_Loader| PHPPlatform
+    WPAddon -->|ttp_register_items via TTP_Addon_Loader| PHPPlatform
     ProductPHP -->|ttp_register_items| PHPPlatform
-    PHPPlatform -->|apply callbacks| ProductPHP
+    PHPPlatform -->|apply / mutate / restore callbacks| SDKAddon
+    PHPPlatform -->|apply / mutate / restore callbacks| ProductPHP
 ```
 
 **Container rules:**
 
-- Product PHP extends through hooks and callbacks.
+- Internal addons register most Testing Items; product PHP extends through the same hooks for edge cases.
 - Dashboard mutations go through PHP form POSTs (`TTP_Admin_Page::handle_post()`). REST routes exist for external tooling and future clients; product plugins should not treat REST as their extension API.
 - Options are Tester-owned, not product-owned, except when a Danger Utility deliberately mutates product/site data with backup support.
 
@@ -167,24 +177,25 @@ sequenceDiagram
     participant WP as WordPress plugins_loaded
     participant Tester as Themeisle Tester
     participant Registry as TTP_Item_Registry
-    participant Product as Product plugin
+    participant Registrant as Internal addon or product plugin
     participant Store as TTP_Scenario_Store
     participant Applicator as TTP_Hook_Applicator
     participant Hooks as WP/Product hooks
 
     WP->>Tester: boot
     Tester->>Registry: create registry
-    Tester-->>Product: do_action('ttp_register_items', registry)
-    Product->>Registry: register(array schema)
+    Note over Tester,Registrant: TTP_Addon_Loader hooks SDK, WordPress, etc.
+    Tester-->>Registrant: do_action('ttp_register_items', registry)
+    Registrant->>Registry: register(array schema)
     Registry->>Registry: validate + normalize
-    Tester-->>Product: do_action('ttp_items_registered', registry)
+    Tester-->>Registrant: do_action('ttp_items_registered', registry)
     Applicator->>Store: get enabled Scenario state
     Applicator->>Applicator: apply_filters('ttp_is_runtime_enabled', enabled)
     alt runtime enabled and not TTP_DISABLED
-        Applicator-->>Product: do_action('ttp_before_apply_scenario', item, state)
-        Applicator->>Product: call Scenario apply callback
-        Product->>Hooks: add_filter / add_action
-        Applicator-->>Product: do_action('ttp_after_apply_scenario', item, state)
+        Applicator-->>Registrant: do_action('ttp_before_apply_scenario', item, state)
+        Applicator->>Registrant: call Scenario apply callback
+        Registrant->>Hooks: add_filter / add_action
+        Applicator-->>Registrant: do_action('ttp_after_apply_scenario', item, state)
     else runtime disabled
         Applicator->>Applicator: skip Scenario (still registered, not applied)
     end
@@ -324,9 +335,11 @@ apply_filters( 'ttp_is_runtime_enabled', $enabled );
 
 Per `ENGINEERING.md` §"Public API", every `do_action()` / `apply_filters()` is documented at the call site with who should use it and when it fires.
 
-## Gap analysis against the earlier implementation plan
+## Gap analysis against the earlier implementation plan (historical)
 
-The earlier draft at `/Users/robert/.claude/plans/the-role-os-this-crystalline-whisper.md` predates this doc set. The list below records every place the earlier plan must be adjusted before execution, with citations to the doc that drove each change. This is kept inside the architecture doc so future readers can understand why the architecture looks the way it does.
+> **Historical record only.** The items below describe gaps between an early draft plan and the decisions now locked in `docs/adr/` and `docs/PROJECT.md`. They are not an open implementation checklist — treat [ADR-0004](adr/0004-use-array-schemas-for-testing-items.md), [ADR-0005](adr/0005-back-up-danger-utility-mutations.md), [ADR-0006](adr/0006-server-render-the-dashboard.md), [ADR-0008](adr/0008-datastar-hypermedia-dashboard.md), and [ADR-0009](adr/0009-internal-addon-structure.md) as the source of truth.
+
+The earlier draft at `/Users/robert/.claude/plans/the-role-os-this-crystalline-whisper.md` predates this doc set. The list records why the architecture looks the way it does today.
 
 ### 1. Domain model is too narrow (`CONTEXT.md`, `docs/PROJECT.md`)
 
@@ -358,7 +371,7 @@ The earlier plan stores everything in a single `ttp_state` option. ENGINEERING.m
 
 ### 8. Build tooling (superseded by ADR-0006)
 
-The earlier plan specified `@wordpress/scripts`. ADR-0003 then chose `@wordpress/build` routes. **ADR-0006 supersedes both** — v1 ships no Dashboard JS bundler; the only client-side code is `admin/js/dashboard.js`, a standalone vanilla-JS file enqueued directly by `TTP_Admin_Page::enqueue_dashboard_assets()`. JavaScript linting still runs via Biome (`npm run lint`).
+The earlier plan specified `@wordpress/scripts`. ADR-0003 then chose `@wordpress/build` routes. **ADR-0006 supersedes both** — v1 ships no Dashboard JS bundler. Client code is vendored Datastar (`admin/js/libs/datastar.min.js`) plus `admin/js/dashboard.js`, enqueued by `TTP_Admin_Page::enqueue_dashboard_assets()` (ADR-0008). JavaScript linting still runs via Biome (`npm run lint`).
 
 ### 9. Custom Control enqueuing has its own hook (`docs/PROJECT.md`)
 

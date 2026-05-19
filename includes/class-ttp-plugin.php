@@ -43,6 +43,13 @@ class TTP_Plugin {
 	private $backup_store;
 
 	/**
+	 * Dashboard activity store.
+	 *
+	 * @var TTP_Activity_Store
+	 */
+	private $activity_store;
+
+	/**
 	 * Schema sanitizer.
 	 *
 	 * @var TTP_Schema_Sanitizer
@@ -69,6 +76,7 @@ class TTP_Plugin {
 		$this->registry         = new TTP_Item_Registry();
 		$this->scenario_store   = new TTP_Scenario_Store();
 		$this->backup_store     = new TTP_Danger_Backup_Store();
+		$this->activity_store   = new TTP_Activity_Store();
 		$this->schema_sanitizer = new TTP_Schema_Sanitizer();
 	}
 
@@ -78,18 +86,21 @@ class TTP_Plugin {
 	 * @return void
 	 */
 	public function init() {
-		$bundled_items = new TTP_Bundled_Items();
-
-		add_action( 'ttp_register_items', array( $bundled_items, 'register' ) );
+		$addon_loader = new TTP_Addon_Loader();
+		$addon_loader->init();
 		add_action( 'plugins_loaded', array( $this, 'register_items_and_apply_scenarios' ), 20 );
 
-		$admin_page = new TTP_Admin_Page( $this->registry, $this->scenario_store, $this->backup_store, $this->schema_sanitizer );
+		$dashboard_actions = new TTP_Dashboard_Actions( $this->registry, $this->scenario_store, $this->backup_store, $this->schema_sanitizer, $this->activity_store );
+
+		$admin_page = new TTP_Admin_Page( $this->registry, $this->scenario_store, $this->backup_store, $dashboard_actions, $this->activity_store );
 		$admin_page->init();
+
+		$dashboard_renderer = new TTP_Dashboard_Renderer( $admin_page, $this->registry, $admin_page->get_flash_renderer(), $admin_page->get_activity_renderer() );
 
 		$admin_notices = new TTP_Admin_Notices( $this->registry, $this->scenario_store );
 		$admin_notices->init();
 
-		$rest_controller = new TTP_REST_Controller( $this->registry, $this->scenario_store, $this->backup_store, $this->schema_sanitizer );
+		$rest_controller = new TTP_REST_Controller( $this->registry, $this->scenario_store, $this->backup_store, $dashboard_actions, $dashboard_renderer );
 		$rest_controller->init();
 	}
 

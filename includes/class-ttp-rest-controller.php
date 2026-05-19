@@ -45,25 +45,42 @@ class TTP_REST_Controller {
 	private $backup_store;
 
 	/**
-	 * Schema sanitizer.
+	 * Shared Dashboard actions.
 	 *
-	 * @var TTP_Schema_Sanitizer
+	 * @var TTP_Dashboard_Actions
 	 */
-	private $schema_sanitizer;
+	private $dashboard_actions;
+
+	/**
+	 * HTML fragment renderer.
+	 *
+	 * @var TTP_Dashboard_Renderer
+	 */
+	private $dashboard_renderer;
+
+	/**
+	 * HTML negotiation for Datastar morph responses.
+	 *
+	 * @var TTP_REST_Html
+	 */
+	private $rest_html;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param TTP_Item_Registry       $registry         Registry.
-	 * @param TTP_Scenario_Store      $scenario_store   Scenario store.
-	 * @param TTP_Danger_Backup_Store $backup_store     Backup store.
-	 * @param TTP_Schema_Sanitizer    $schema_sanitizer Schema sanitizer.
+	 * @param TTP_Item_Registry       $registry           Registry.
+	 * @param TTP_Scenario_Store      $scenario_store     Scenario store.
+	 * @param TTP_Danger_Backup_Store $backup_store       Backup store.
+	 * @param TTP_Dashboard_Actions   $dashboard_actions  Shared actions.
+	 * @param TTP_Dashboard_Renderer  $dashboard_renderer HTML fragments.
 	 */
-	public function __construct( TTP_Item_Registry $registry, TTP_Scenario_Store $scenario_store, TTP_Danger_Backup_Store $backup_store, TTP_Schema_Sanitizer $schema_sanitizer ) {
-		$this->registry         = $registry;
-		$this->scenario_store   = $scenario_store;
-		$this->backup_store     = $backup_store;
-		$this->schema_sanitizer = $schema_sanitizer;
+	public function __construct( TTP_Item_Registry $registry, TTP_Scenario_Store $scenario_store, TTP_Danger_Backup_Store $backup_store, TTP_Dashboard_Actions $dashboard_actions, TTP_Dashboard_Renderer $dashboard_renderer ) {
+		$this->registry           = $registry;
+		$this->scenario_store     = $scenario_store;
+		$this->backup_store       = $backup_store;
+		$this->dashboard_actions  = $dashboard_actions;
+		$this->dashboard_renderer = $dashboard_renderer;
+		$this->rest_html          = new TTP_REST_Html( self::NAMESPACE_NAME );
 	}
 
 	/**
@@ -73,6 +90,7 @@ class TTP_REST_Controller {
 	 */
 	public function init() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		$this->rest_html->init();
 	}
 
 	/**
@@ -184,6 +202,107 @@ class TTP_REST_Controller {
 	}
 
 	/**
+	 * Return JSON or HTML for a card action.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param WP_REST_Request     $request Request.
+	 * @param array<string,mixed> $item    Item.
+	 * @param mixed               $result  Action result.
+	 * @param array<string,mixed> $json    JSON body on success.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function respond_action( WP_REST_Request $request, $item, $result, array $json ) {
+		if ( is_wp_error( $result ) ) {
+			if ( $this->rest_html->wants_html( $request ) ) {
+				return $this->rest_html->html_response( $this->dashboard_renderer->render_action_response( $item, $result ) );
+			}
+
+			return $result;
+		}
+
+		if ( $this->rest_html->wants_html( $request ) ) {
+			return $this->rest_html->html_response( $this->dashboard_renderer->render_action_response( $item, $result ) );
+		}
+
+		return rest_ensure_response( $json );
+	}
+
+	/**
+	 * Parse params from JSON or Dashboard form field names.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string,mixed>
+	 */
+	private function parse_params_from_request( WP_REST_Request $request ) {
+		$params = $request->get_param( 'params' );
+
+		if ( is_array( $params ) ) {
+			return $this->clean_string_keyed_array( $params );
+		}
+
+		$ttp_params = $request->get_param( 'ttp_params' );
+
+		if ( is_array( $ttp_params ) ) {
+			$raw = map_deep( $ttp_params, 'sanitize_textarea_field' );
+
+			return $this->clean_string_keyed_array( is_array( $raw ) ? $raw : array() );
+		}
+
+		return array();
+	}
+
+	/**
+	 * Parse enabled flag from JSON or form.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool
+	 */
+	private function parse_enabled_from_request( WP_REST_Request $request ) {
+		if ( null !== $request->get_param( 'enabled' ) ) {
+			return (bool) $request->get_param( 'enabled' );
+		}
+
+		return ! empty( $request->get_param( 'ttp_enabled' ) );
+	}
+
+	/**
+	 * Parse danger target from JSON or form.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return string
+	 */
+	private function parse_target_from_request( WP_REST_Request $request ) {
+		$target = $request->get_param( 'target' );
+
+		if ( is_string( $target ) && '' !== $target ) {
+			return sanitize_text_field( $target );
+		}
+
+		$ttp_target = $request->get_param( 'ttp_target' );
+
+		return is_string( $ttp_target ) ? sanitize_text_field( $ttp_target ) : '';
+	}
+
+	/**
+	 * Keep only string keys in an array.
+	 *
+	 * @param array<mixed> $data Raw array.
+	 * @return array<string,mixed>
+	 */
+	private function clean_string_keyed_array( array $data ) {
+		$clean = array();
+
+		foreach ( $data as $key => $value ) {
+			if ( is_string( $key ) ) {
+				$clean[ $key ] = $value;
+			}
+		}
+
+		return $clean;
+	}
+
+	/**
 	 * Return boot data.
 	 *
 	 * @return WP_REST_Response
@@ -214,18 +333,18 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		$params = $request->get_param( 'params' );
-		$params = is_array( $params ) ? $params : array();
-		$params = $this->schema_sanitizer->sanitize_params( $item, $params );
-
-		if ( is_wp_error( $params ) ) {
-			return $params;
-		}
+		$result = $this->dashboard_actions->save_scenario(
+			$item,
+			$this->parse_enabled_from_request( $request ),
+			$this->parse_params_from_request( $request )
+		);
 
 		$item_id = $item['id'];
-		$this->scenario_store->save( $item_id, (bool) $request->get_param( 'enabled' ), $params );
 
-		return rest_ensure_response(
+		return $this->respond_action(
+			$request,
+			$item,
+			$result,
 			array(
 				'state' => $this->scenario_store->get( $item_id ),
 			)
@@ -245,10 +364,13 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
+		$result  = $this->dashboard_actions->reset_scenario( $item );
 		$item_id = $item['id'];
-		$this->scenario_store->reset( $item_id );
 
-		return rest_ensure_response(
+		return $this->respond_action(
+			$request,
+			$item,
+			$result,
 			array(
 				'state' => $this->scenario_store->get( $item_id ),
 			)
@@ -290,40 +412,15 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		if ( ! is_callable( $item['run'] ) ) {
-			return new WP_Error( 'ttp_utility_not_runnable', __( 'This Utility does not provide an action.', 'themeisle-tester' ), array( 'status' => 400 ) );
+		$payload = $this->parse_params_from_request( $request );
+
+		if ( empty( $payload ) ) {
+			$payload = $this->get_payload( $request );
 		}
 
-		$payload = $this->get_payload( $request );
+		$result = $this->dashboard_actions->run_utility( $item, $payload );
 
-		/**
-		 * Fires before a Themeisle Tester Utility is run.
-		 *
-		 * Product plugins can observe Utility execution for debugging.
-		 *
-		 * @param array<string,mixed> $item    Normalized Utility definition.
-		 * @param array<string,mixed> $payload Request payload.
-		 */
-		do_action( 'ttp_before_run_utility', $item, $payload );
-
-		$result = call_user_func( $item['run'], $item, $payload );
-
-		if ( is_wp_error( $result ) ) {
-			return $result;
-		}
-
-		/**
-		 * Fires after a Themeisle Tester Utility has run.
-		 *
-		 * Product plugins can observe Utility execution results for debugging.
-		 *
-		 * @param array<string,mixed> $item    Normalized Utility definition.
-		 * @param array<string,mixed> $payload Request payload.
-		 * @param mixed               $result  Utility result.
-		 */
-		do_action( 'ttp_after_run_utility', $item, $payload, $result );
-
-		return rest_ensure_response( $result );
+		return $this->respond_action( $request, $item, $result, is_array( $result ) ? $result : array() );
 	}
 
 	/**
@@ -355,76 +452,19 @@ class TTP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function mutate_danger_utility( WP_REST_Request $request ) {
-		if ( ! $this->is_runtime_enabled() ) {
-			return new WP_Error( 'ttp_runtime_disabled', __( 'Themeisle Tester runtime behavior is disabled.', 'themeisle-tester' ), array( 'status' => 403 ) );
-		}
-
 		$item = $this->get_item_for_type( $this->request_item_id( $request ), 'danger_utility' );
 
 		if ( is_wp_error( $item ) ) {
 			return $item;
 		}
 
-		$target_param = $request->get_param( 'target' );
-		$target       = is_string( $target_param ) ? sanitize_text_field( $target_param ) : '';
+		$result = $this->dashboard_actions->mutate_danger(
+			$item,
+			$this->parse_target_from_request( $request ),
+			$this->parse_params_from_request( $request )
+		);
 
-		if ( '' === $target ) {
-			return new WP_Error( 'ttp_missing_target', __( 'Danger Utility mutation requires a target.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
-
-		$payload = $this->get_payload( $request );
-		$params  = $this->schema_sanitizer->sanitize_params( $item, $payload );
-
-		if ( is_wp_error( $params ) ) {
-			return $params;
-		}
-
-		if ( ! is_callable( $item['inspect'] ) || ! is_callable( $item['mutate'] ) ) {
-			return new WP_Error( 'ttp_utility_not_runnable', __( 'This Danger Utility is missing required callbacks.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
-
-		$inspect = call_user_func( $item['inspect'], $item, array( 'target' => $target ) );
-
-		if ( is_wp_error( $inspect ) ) {
-			return $inspect;
-		}
-
-		$item_id = $item['id'];
-
-		if ( is_array( $inspect ) && array_key_exists( 'backup', $inspect ) ) {
-			$this->backup_store->backup_once( $item_id, $target, $inspect['backup'] );
-		}
-
-		/**
-		 * Fires before a Themeisle Tester Danger Utility mutates a target.
-		 *
-		 * Product plugins can observe controlled mutation for debugging.
-		 *
-		 * @param array<string,mixed> $item    Normalized Danger Utility definition.
-		 * @param string              $target  Target identifier.
-		 * @param array<string,mixed> $payload Sanitized payload.
-		 */
-		do_action( 'ttp_before_mutate_danger_utility', $item, $target, $params );
-
-		$result = call_user_func( $item['mutate'], $item, $target, $params );
-
-		if ( is_wp_error( $result ) ) {
-			return $result;
-		}
-
-		/**
-		 * Fires after a Themeisle Tester Danger Utility mutates a target.
-		 *
-		 * Product plugins can observe controlled mutation results for debugging.
-		 *
-		 * @param array<string,mixed> $item    Normalized Danger Utility definition.
-		 * @param string              $target  Target identifier.
-		 * @param array<string,mixed> $payload Sanitized payload.
-		 * @param mixed               $result  Mutation result.
-		 */
-		do_action( 'ttp_after_mutate_danger_utility', $item, $target, $params, $result );
-
-		return rest_ensure_response( $result );
+		return $this->respond_action( $request, $item, $result, is_array( $result ) ? $result : array() );
 	}
 
 	/**
@@ -440,54 +480,12 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		$target_param = $request->get_param( 'target' );
-		$target       = is_string( $target_param ) ? sanitize_text_field( $target_param ) : '';
+		$result = $this->dashboard_actions->restore_danger(
+			$item,
+			$this->parse_target_from_request( $request )
+		);
 
-		if ( '' === $target ) {
-			return new WP_Error( 'ttp_missing_target', __( 'Danger Utility restore requires a target.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
-
-		if ( ! is_callable( $item['restore'] ) ) {
-			return new WP_Error( 'ttp_utility_not_runnable', __( 'This Danger Utility cannot restore backups.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
-
-		$item_id = $item['id'];
-		$backup  = $this->backup_store->get( $item_id, $target );
-
-		if ( null === $backup ) {
-			return new WP_Error( 'ttp_missing_backup', __( 'No backup exists for this target.', 'themeisle-tester' ), array( 'status' => 404 ) );
-		}
-
-		/**
-		 * Fires before a Themeisle Tester Danger Utility restores a target.
-		 *
-		 * Product plugins can observe restore behavior for debugging.
-		 *
-		 * @param array<string,mixed> $item   Normalized Danger Utility definition.
-		 * @param string              $target Target identifier.
-		 */
-		do_action( 'ttp_before_restore_danger_utility', $item, $target );
-
-		$result = call_user_func( $item['restore'], $item, $target, $backup );
-
-		if ( is_wp_error( $result ) ) {
-			return $result;
-		}
-
-		$this->backup_store->delete( $item_id, $target );
-
-		/**
-		 * Fires after a Themeisle Tester Danger Utility restores a target.
-		 *
-		 * Product plugins can observe restore results for debugging.
-		 *
-		 * @param array<string,mixed> $item   Normalized Danger Utility definition.
-		 * @param string              $target Target identifier.
-		 * @param mixed               $result Restore result.
-		 */
-		do_action( 'ttp_after_restore_danger_utility', $item, $target, $result );
-
-		return rest_ensure_response( $result );
+		return $this->respond_action( $request, $item, $result, is_array( $result ) ? $result : array() );
 	}
 
 	/**
@@ -527,21 +525,13 @@ class TTP_REST_Controller {
 		$payload = $request->get_param( 'payload' );
 
 		if ( is_array( $payload ) ) {
-			$clean = array();
-
-			foreach ( $payload as $key => $value ) {
-				if ( is_string( $key ) ) {
-					$clean[ $key ] = $value;
-				}
-			}
-
-			return $clean;
+			return $this->clean_string_keyed_array( $payload );
 		}
 
 		$params = $request->get_params();
 		unset( $params['id'] );
 
-		return $params;
+		return $this->clean_string_keyed_array( $params );
 	}
 
 	/**

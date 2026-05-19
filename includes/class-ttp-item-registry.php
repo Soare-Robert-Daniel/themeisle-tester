@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     product: string,
  *     label: string,
  *     description: string,
+ *     width: string,
  *     fields: array<int,array<string,mixed>>,
  *     apply: callable|null,
  *     inspect: callable|null,
@@ -287,6 +288,10 @@ class TTP_Item_Registry {
 			}
 		}
 
+		$width_default = 'danger_utility' === $type ? 'full' : 'normal';
+		$width_raw     = isset( $item['width'] ) && is_string( $item['width'] ) ? sanitize_key( $item['width'] ) : $width_default;
+		$width         = in_array( $width_raw, array( 'normal', 'wide', 'full' ), true ) ? $width_raw : $width_default;
+
 		return array(
 			'id'                          => $id,
 			'type'                        => $type,
@@ -295,6 +300,7 @@ class TTP_Item_Registry {
 			'product'                     => $product,
 			'label'                       => $label,
 			'description'                 => isset( $item['description'] ) && is_string( $item['description'] ) ? sanitize_text_field( $item['description'] ) : '',
+			'width'                       => $width,
 			'fields'                      => $fields,
 			'apply'                       => isset( $item['apply'] ) && is_callable( $item['apply'] ) ? $item['apply'] : null,
 			'inspect'                     => isset( $item['inspect'] ) && is_callable( $item['inspect'] ) ? $item['inspect'] : null,

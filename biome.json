@@ -6,7 +6,8 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": ["admin/css/**", "admin/js/dashboard.js"]
 	},
 	"formatter": {
 		"enabled": true,

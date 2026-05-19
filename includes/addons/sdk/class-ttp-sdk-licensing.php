@@ -1,6 +1,6 @@
 <?php
 /**
- * Bundled Themeisle Tester items.
+ * SDK license and install timestamp Testing Items.
  *
  * @package Themeisle_Tester
  */
@@ -10,88 +10,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers bundled shared SDK Scenarios and Utilities.
+ * Registers license and install Danger Utilities.
  */
-class TTP_Bundled_Items {
+class TTP_SDK_Licensing {
 
 	/**
-	 * Register bundled Testing Items.
+	 * Register licensing Testing Items (license editor, then install editor).
 	 *
 	 * @param TTP_Item_Registry $registry Item registry.
 	 * @return void
 	 */
 	public function register( TTP_Item_Registry $registry ) {
-		$promos_surveys    = __( 'Black Friday & Surveys', 'themeisle-tester' );
+		$this->register_license_item( $registry );
+		$this->register_install_item( $registry );
+	}
+
+	/**
+	 * Register the license data editor Danger Utility.
+	 *
+	 * @param TTP_Item_Registry $registry Item registry.
+	 * @return void
+	 */
+	public function register_license_item( TTP_Item_Registry $registry ) {
 		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
 		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
-		$group_bf          = __( 'Black Friday', 'themeisle-tester' );
-		$group_surveys     = __( 'Surveys', 'themeisle-tester' );
-
-		$registry->register(
-			array(
-				'id'          => 'sdk_current_date',
-				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_bf,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Override SDK current date', 'themeisle-tester' ),
-				'description' => __( 'Overrides the date returned by themeisle_sdk_current_date — useful to fast-forward into the sale window.', 'themeisle-tester' ),
-				'fields'      => array(
-					array(
-						'id'    => 'date',
-						'type'  => 'date',
-						'label' => __( 'Override date', 'themeisle-tester' ),
-					),
-				),
-				'apply'       => array( $this, 'apply_current_date' ),
-			)
-		);
-
-		$registry->register(
-			array(
-				'id'          => 'sdk_blackfriday_domain',
-				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_bf,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Swap Black Friday sale URL domains', 'themeisle-tester' ),
-				'description' => __( 'Replaces sale URL hosts in themeisle_sdk_blackfriday_data.', 'themeisle-tester' ),
-				'fields'      => array(
-					array(
-						'id'    => 'domain',
-						'type'  => 'text',
-						'label' => __( 'Replacement domain', 'themeisle-tester' ),
-					),
-				),
-				'apply'       => array( $this, 'apply_black_friday_domain' ),
-			)
-		);
-
-		$registry->register(
-			array(
-				'id'          => 'clear_black_friday_dismissal',
-				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_bf,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Clear Black Friday dismissed notice', 'themeisle-tester' ),
-				'description' => __( 'Clears the current user dismissal for the Black Friday notice.', 'themeisle-tester' ),
-				'run'         => array( $this, 'run_clear_black_friday_dismissal' ),
-			)
-		);
-
-		$registry->register(
-			array(
-				'id'          => 'black_friday_dates',
-				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_bf,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Black Friday quick dates', 'themeisle-tester' ),
-				'description' => __( 'Shows sale start, Black Friday, and sale end dates for the current year.', 'themeisle-tester' ),
-				'inspect'     => array( $this, 'inspect_black_friday_dates' ),
-			)
-		);
 
 		$registry->register(
 			array(
@@ -114,65 +56,17 @@ class TTP_Bundled_Items {
 				'restore'     => array( $this, 'restore_option_backup' ),
 			)
 		);
+	}
 
-		$registry->register(
-			array(
-				'id'          => 'survey_data_override',
-				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_surveys,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Override Formbricks survey data', 'themeisle-tester' ),
-				'description' => __( 'Hooks themeisle-sdk/survey/{product_slug} to override environment ID, plan, or install days for a Themeisle product.', 'themeisle-tester' ),
-				'fields'      => array(
-					array(
-						'id'    => 'product_slug',
-						'type'  => 'text',
-						'label' => __( 'Product slug (e.g. otter-blocks, neve)', 'themeisle-tester' ),
-					),
-					array(
-						'id'    => 'environment_id',
-						'type'  => 'text',
-						'label' => __( 'Formbricks environment ID (blank to leave as is)', 'themeisle-tester' ),
-					),
-					array(
-						'id'      => 'plan',
-						'type'    => 'select',
-						'label'   => __( 'Plan attribute (blank to leave as is)', 'themeisle-tester' ),
-						'options' => array( 'free', 'personal', 'pro', 'business', 'agency' ),
-					),
-					array(
-						'id'    => 'install_days',
-						'type'  => 'text',
-						'label' => __( 'Install days override (blank to leave as is, number to override)', 'themeisle-tester' ),
-					),
-					array(
-						'id'    => 'user_id',
-						'type'  => 'text',
-						'label' => __( 'User ID override (blank to leave as is)', 'themeisle-tester' ),
-					),
-					array(
-						'id'    => 'random_user_id',
-						'type'  => 'toggle',
-						'label' => __( 'Generate a random user ID on every survey load (overrides the field above)', 'themeisle-tester' ),
-					),
-				),
-				'apply'       => array( $this, 'apply_survey_override' ),
-			)
-		);
-
-		$registry->register(
-			array(
-				'id'          => 'survey_data_inspect',
-				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_surveys,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Inspect survey data', 'themeisle-tester' ),
-				'description' => __( 'Runs themeisle-sdk/survey/{product_slug} for known Themeisle products and shows what Formbricks would receive.', 'themeisle-tester' ),
-				'inspect'     => array( $this, 'inspect_survey_data' ),
-			)
-		);
+	/**
+	 * Register the install timestamp editor Danger Utility.
+	 *
+	 * @param TTP_Item_Registry $registry Item registry.
+	 * @return void
+	 */
+	public function register_install_item( TTP_Item_Registry $registry ) {
+		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
+		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
 
 		$registry->register(
 			array(
@@ -193,218 +87,6 @@ class TTP_Bundled_Items {
 				'mutate'      => array( $this, 'mutate_install_timestamp' ),
 				'restore'     => array( $this, 'restore_option_backup' ),
 			)
-		);
-	}
-
-	/**
-	 * Apply current date override.
-	 *
-	 * @param array<string,mixed> $item  Item definition.
-	 * @param array<string,mixed> $state Scenario state.
-	 * @return void
-	 */
-	public function apply_current_date( $item, $state ) {
-		$params = isset( $state['params'] ) && is_array( $state['params'] ) ? $state['params'] : array();
-		$date   = isset( $params['date'] ) && is_string( $params['date'] ) ? $params['date'] : '';
-
-		if ( '' === $date ) {
-			return;
-		}
-
-		add_filter(
-			'themeisle_sdk_current_date',
-			function () use ( $date ) {
-				try {
-					return new DateTime( $date . ' 00:00:00' );
-				} catch ( Exception $exception ) {
-					return new DateTime( 'now' );
-				}
-			},
-			999
-		);
-	}
-
-	/**
-	 * Apply Black Friday domain replacement.
-	 *
-	 * @param array<string,mixed> $item  Item definition.
-	 * @param array<string,mixed> $state Scenario state.
-	 * @return void
-	 */
-	public function apply_black_friday_domain( $item, $state ) {
-		$params = isset( $state['params'] ) && is_array( $state['params'] ) ? $state['params'] : array();
-		$domain = isset( $params['domain'] ) && is_string( $params['domain'] ) ? sanitize_text_field( $params['domain'] ) : '';
-
-		if ( '' === $domain ) {
-			return;
-		}
-
-		add_filter(
-			'themeisle_sdk_blackfriday_data',
-			function ( $configs ) use ( $domain ) {
-				if ( ! is_array( $configs ) ) {
-					return $configs;
-				}
-
-				foreach ( $configs as $key => $config ) {
-					if ( ! is_array( $config ) || empty( $config['sale_url'] ) || ! is_string( $config['sale_url'] ) ) {
-						continue;
-					}
-
-					$sale_url   = $config['sale_url'];
-					$parsed_url = wp_parse_url( $sale_url );
-
-					if ( ! is_array( $parsed_url ) || empty( $parsed_url['host'] ) ) {
-						continue;
-					}
-
-					$config['sale_url'] = esc_url_raw( str_replace( $parsed_url['host'], $domain, $sale_url ) );
-					$configs[ $key ]    = $config;
-				}
-
-				return $configs;
-			},
-			9999
-		);
-	}
-
-	/**
-	 * Apply Formbricks survey override.
-	 *
-	 * Hooks the themeisle-sdk/survey/{slug} filter and selectively overrides
-	 * environment ID, plan, and install_days_number attributes.
-	 *
-	 * @param array<string,mixed> $item  Item definition.
-	 * @param array<string,mixed> $state Scenario state.
-	 * @return void
-	 */
-	public function apply_survey_override( $item, $state ) {
-		$params = isset( $state['params'] ) && is_array( $state['params'] ) ? $state['params'] : array();
-		$slug   = isset( $params['product_slug'] ) && is_string( $params['product_slug'] ) ? sanitize_key( $params['product_slug'] ) : '';
-
-		if ( '' === $slug ) {
-			return;
-		}
-
-		$environment_id = isset( $params['environment_id'] ) && is_string( $params['environment_id'] ) ? sanitize_text_field( $params['environment_id'] ) : '';
-		$plan           = isset( $params['plan'] ) && is_string( $params['plan'] ) ? sanitize_text_field( $params['plan'] ) : '';
-		$install_days   = isset( $params['install_days'] ) && is_string( $params['install_days'] ) ? sanitize_text_field( $params['install_days'] ) : '';
-		$user_id        = isset( $params['user_id'] ) && is_string( $params['user_id'] ) ? sanitize_text_field( $params['user_id'] ) : '';
-		$random_user_id = ! empty( $params['random_user_id'] );
-
-		add_filter(
-			// phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- Targets the SDK-defined hook name.
-			'themeisle-sdk/survey/' . $slug,
-			function ( $data, $page_slug ) use ( $environment_id, $plan, $install_days, $user_id, $random_user_id ) {
-				unset( $page_slug );
-
-				if ( ! is_array( $data ) ) {
-					$data = array();
-				}
-
-				if ( ! isset( $data['attributes'] ) || ! is_array( $data['attributes'] ) ) {
-					$data['attributes'] = array();
-				}
-
-				if ( '' !== $environment_id ) {
-					$data['environmentId'] = $environment_id;
-				}
-
-				if ( '' !== $plan ) {
-					$data['attributes']['plan'] = $plan;
-				}
-
-				if ( '' !== $install_days && is_numeric( $install_days ) ) {
-					$data['attributes']['install_days_number'] = (int) $install_days;
-				}
-
-				if ( $random_user_id ) {
-					$data['userId'] = 'u_' . wp_generate_password( 8, false );
-				} elseif ( '' !== $user_id ) {
-					$data['userId'] = $user_id;
-				}
-
-				return $data;
-			},
-			9999,
-			2
-		);
-	}
-
-	/**
-	 * Inspect survey data for known Themeisle product slugs.
-	 *
-	 * Calls apply_filters( 'themeisle-sdk/survey/{slug}', [], '' ) for a curated
-	 * list of products and returns each result as a flat key/value pair.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function inspect_survey_data() {
-		$known_products = array(
-			'otter-blocks',
-			'neve',
-			'optimole-wp',
-			'rop',
-			'wp-hyve-lite',
-			'feedzy-rss-feeds',
-			'translatepress-multilingual',
-		);
-
-		$result = array(
-			'_note' => __( 'Blank entries mean the product is inactive or has no survey handler registered.', 'themeisle-tester' ),
-		);
-
-		foreach ( $known_products as $slug ) {
-			/** This filter is documented in themeisle-sdk-main/src/Modules/Script_loader.php. */
-			// phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- Targets the SDK-defined hook name.
-			$data = apply_filters( 'themeisle-sdk/survey/' . $slug, array(), '' );
-
-			if ( ! is_array( $data ) || empty( $data ) ) {
-				$result[ $slug ] = '—';
-				continue;
-			}
-
-			$encoded         = wp_json_encode( $data );
-			$result[ $slug ] = is_string( $encoded ) ? $encoded : '';
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Clear Black Friday notice dismissal for current user.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function run_clear_black_friday_dismissal() {
-		delete_user_meta( get_current_user_id(), 'themeisle_sdk_dismissed_notice_black_friday' );
-
-		return array(
-			'message' => __( 'Black Friday notice dismissal cleared for the current user.', 'themeisle-tester' ),
-		);
-	}
-
-	/**
-	 * Inspect Black Friday quick dates.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function inspect_black_friday_dates() {
-		$now          = new DateTime( 'now' );
-		$current_year = $now->format( 'Y' );
-		$black_friday = new DateTime( 'last Friday of November ' . $current_year );
-		$sale_start   = clone $black_friday;
-		$sale_start->modify( 'monday this week' );
-		$sale_start->setTime( 0, 0, 0 );
-		$sale_end = clone $sale_start;
-		$sale_end->modify( '+7 days' );
-		$sale_end->setTime( 23, 59, 59 );
-
-		return array(
-			'year'         => $current_year,
-			'sale_start'   => $sale_start->format( 'Y-m-d' ),
-			'black_friday' => $black_friday->format( 'Y-m-d' ),
-			'sale_end'     => $sale_end->format( 'Y-m-d' ),
 		);
 	}
 
@@ -462,10 +144,9 @@ class TTP_Bundled_Items {
 			$current_data['license'] = $status;
 			$updated_data            = $current_data;
 		} else {
-			$object_data = clone $current_data;
-			// @phpstan-ignore property.notFound
-			$object_data->license = $status;
-			$updated_data         = $object_data;
+			$props            = get_object_vars( $current_data );
+			$props['license'] = $status;
+			$updated_data     = (object) $props;
 		}
 
 		update_option( $target, $updated_data );
