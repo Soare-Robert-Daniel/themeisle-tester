@@ -59,7 +59,8 @@
 
 ## Testing
 
-- PHPUnit contract tests are not wired yet; static analysis (`composer run phpstan`) and linters are the current gate. Add contract tests for the extension API before relying heavily on product integrations in CI.
+- Run contract tests with `composer run test` (PHPUnit). Requires the WordPress test library: set `WP_TESTS_DIR` or install via `bin/install-wp-tests.sh` from the [WordPress develop repo](https://github.com/WordPress/wordpress-develop).
+- Static analysis (`composer run phpstan`) and linters remain required before merge.
 - Cover at least these cases:
   - a fake Product registers a valid Testing Item;
   - an invalid item is rejected with a useful reason;

@@ -186,14 +186,31 @@
 	min-width: 0;
 }
 
-/* --- Tabs (vertical sidebar) ----------------------------------------- */
+/* --- Tabs (vertical sidebar) ----------------------------------------- *
+ * Panel-selector strip: each tab is a row with a selected-state lamp,
+ * a two-digit channel number, the label, and a small green dot
+ * indicator on the right if the category has any active scenarios.
+ */
+
+.ttp-tabs__heading {
+	margin: 0 0 var(--ttp-space-2);
+	padding: 0 var(--ttp-space-2);
+	font-size: 10px;
+	font-weight: var(--ttp-weight-semibold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ttp-text-subtle);
+}
 
 .ttp-tabs {
 	display: flex;
 	flex-direction: column;
-	gap: var(--ttp-space-1);
+	gap: 2px;
 	margin: 0;
-	padding: 0;
+	padding: var(--ttp-space-1);
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-border-hair);
+	border-radius: var(--ttp-radius-sm);
 	list-style: none;
 }
 
@@ -207,19 +224,19 @@
 	appearance: none;
 	width: 100%;
 	background: transparent;
-	border: 0;
-	border-left: 3px solid transparent;
+	border: 1px solid transparent;
 	border-radius: var(--ttp-radius-sm);
-	padding: var(--ttp-space-2) var(--ttp-space-3);
-	font-size: var(--ttp-text-base);
-	font-weight: var(--ttp-weight-medium);
+	padding: 6px var(--ttp-space-2);
+	font-size: var(--ttp-text-xs);
+	font-weight: var(--ttp-weight-semibold);
 	color: var(--ttp-text-muted);
 	line-height: var(--ttp-leading-snug);
+	letter-spacing: var(--ttp-tracking-wider);
+	text-transform: uppercase;
 	text-align: left;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: var(--ttp-space-2);
 	transition:
 		color var(--ttp-duration-fast) var(--ttp-ease),
@@ -227,15 +244,38 @@
 		border-color var(--ttp-duration-fast) var(--ttp-ease);
 }
 
+.ttp-tab__lamp {
+	flex-shrink: 0;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-border);
+	transition: background var(--ttp-duration-fast) var(--ttp-ease), border-color var(--ttp-duration-fast) var(--ttp-ease), box-shadow var(--ttp-duration-fast) var(--ttp-ease);
+}
+
 .ttp-tab__label {
 	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ttp-tab__indicator-slot {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
 	min-width: 0;
 }
 
 .ttp-tab:hover {
 	color: var(--ttp-text);
 	background: var(--ttp-bg-muted);
-	border-left-color: var(--ttp-border);
+}
+
+.ttp-tab:hover .ttp-tab__lamp {
+	border-color: var(--ttp-border-strong);
 }
 
 .ttp-tab:focus {
@@ -248,10 +288,15 @@
 }
 
 .ttp-tab[aria-selected="true"] {
-	color: var(--ttp-accent-strong);
+	color: var(--ttp-text);
 	background: var(--ttp-accent-bg);
-	border-left-color: var(--ttp-accent);
-	font-weight: var(--ttp-weight-semibold);
+	border-color: color-mix(in oklch, var(--ttp-accent) 22%, var(--ttp-border-hair));
+}
+
+.ttp-tab[aria-selected="true"] .ttp-tab__lamp {
+	background: var(--ttp-accent);
+	border-color: var(--ttp-accent);
+	box-shadow: 0 0 0 2px var(--ttp-accent-bg);
 }
 
 .ttp-tab__indicator {
@@ -260,7 +305,6 @@
 	height: 6px;
 	border-radius: 50%;
 	background: var(--ttp-success);
-	box-shadow: 0 0 0 2px var(--ttp-success-bg);
 }
 
 /* --- Panels + grid --------------------------------------------------- */
@@ -289,6 +333,10 @@
 	color: var(--ttp-text-muted);
 }
 
+.ttp-panel__group-title-text {
+	flex-shrink: 0;
+}
+
 .ttp-panel__group-title::after {
 	content: "";
 	flex: 1;
@@ -296,36 +344,84 @@
 	background: var(--ttp-border-hair);
 }
 
-.ttp-panel__grid + .ttp-panel__group-title {
-	margin-top: var(--ttp-space-6);
+.ttp-panel__group-meta {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ttp-space-2);
+	flex-shrink: 0;
+	order: 3;
 }
 
-/* --- Card ------------------------------------------------------------ */
+.ttp-panel__group-count {
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text-subtle);
+	letter-spacing: 0.01em;
+	text-transform: none;
+}
+
+.ttp-panel__group-active {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ttp-space-1);
+	padding: 1px var(--ttp-space-2);
+	border-radius: var(--ttp-radius-sm);
+	background: var(--ttp-success-bg);
+	color: var(--ttp-success-strong);
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-xs);
+	letter-spacing: 0.01em;
+	text-transform: none;
+}
+
+.ttp-panel__group-active-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--ttp-success);
+}
+
+.ttp-panel__grid > .ttp-panel__group-title {
+	grid-column: 1 / -1;
+}
+
+.ttp-panel__grid > .ttp-panel__group-title:not(:first-child) {
+	margin-top: var(--ttp-space-4);
+}
+
+/* --- Widget (card) --------------------------------------------------- *
+ * Each card is a self-contained widget — like a small physical
+ * instrument (smart plug, label printer, kill switch). The widget
+ * has a name plate at the top (LED + title + info), a body in the
+ * middle (readout + control), and a footer at the bottom (type chip
+ * + product + edit affordance).
+ *
+ * State is signalled by: (a) the LED on the name plate, and (b) a
+ * thin coloured hairline on the top edge of the widget when a
+ * scenario is active or a danger backup is stored. The card body
+ * stays neutral — no full-border colour, no background gradient.
+ */
 
 .ttp-card {
 	display: flex;
 	flex-direction: column;
-	gap: var(--ttp-space-4);
+	gap: var(--ttp-space-3);
+	min-width: 0;
 	background: var(--ttp-bg-subtle);
 	border: 1px solid var(--ttp-border-hair);
 	border-radius: var(--ttp-radius);
-	padding: var(--ttp-space-4);
+	padding: var(--ttp-space-3);
 	transition: border-color var(--ttp-duration-fast) var(--ttp-ease), box-shadow var(--ttp-duration-fast) var(--ttp-ease);
+}
+
+.ttp-card > * {
+	min-width: 0;
 }
 
 .ttp-card:hover {
 	border-color: var(--ttp-border);
 	box-shadow: var(--ttp-shadow-sm);
-}
-
-.ttp-card--scenario-active {
-	border-color: var(--ttp-success);
-	background:
-		linear-gradient(to right, oklch(var(--ttp-l-bg) var(--ttp-c-soft) var(--ttp-h-success)) 0, var(--ttp-bg-subtle) 30%);
-}
-
-.ttp-card--scenario-active:hover {
-	border-color: var(--ttp-success-strong);
 }
 
 /*
@@ -348,42 +444,34 @@
 	cursor: not-allowed;
 }
 
-.ttp-card__header {
+/* --- Name plate (LED + title + info) -------------------------------- */
+
+.ttp-card__nameplate {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: var(--ttp-space-3);
-	flex-wrap: wrap;
-	min-width: 0;
-}
-
-.ttp-card__meta {
-	display: inline-flex;
-	flex-wrap: wrap;
-	align-items: center;
 	gap: var(--ttp-space-2);
-	font-size: var(--ttp-text-xs);
-	color: var(--ttp-text-muted);
-	flex-shrink: 0;
+	min-width: 0;
+	padding-bottom: var(--ttp-space-2);
+	border-bottom: 1px solid var(--ttp-border-subtle);
 }
 
 .ttp-card__title {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--ttp-space-2);
 	flex: 1 1 auto;
 	min-width: 0;
 	margin: 0;
-	font-size: var(--ttp-text-md);
+	font-size: var(--ttp-text-sm);
 	font-weight: var(--ttp-weight-semibold);
 	line-height: var(--ttp-leading-snug);
 	color: var(--ttp-text);
-	letter-spacing: -0.005em;
+	text-transform: uppercase;
+	letter-spacing: var(--ttp-tracking-wider);
 }
 
 .ttp-card__title-text {
 	min-width: 0;
+	display: inline-block;
 }
+
 
 /* Info button + tooltip on the card title */
 
@@ -392,30 +480,32 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 16px;
-	height: 16px;
-	border-radius: 50%;
+	width: 18px;
+	height: 18px;
+	border-radius: var(--ttp-radius-sm);
 	background: var(--ttp-bg-muted);
+	border: 1px solid var(--ttp-border-hair);
 	color: var(--ttp-text-muted);
-	font-size: var(--ttp-text-xs);
+	font-size: 11px;
 	font-weight: var(--ttp-weight-semibold);
-	font-family: var(--ttp-font-sans);
+	font-family: var(--ttp-font-mono);
 	line-height: 1;
 	cursor: help;
 	flex-shrink: 0;
-	transition: background var(--ttp-duration-fast) var(--ttp-ease), color var(--ttp-duration-fast) var(--ttp-ease);
+	transition: background var(--ttp-duration-fast) var(--ttp-ease), color var(--ttp-duration-fast) var(--ttp-ease), border-color var(--ttp-duration-fast) var(--ttp-ease);
 }
 
 .ttp-card__info:hover,
 .ttp-card__info:focus-visible {
-	background: var(--ttp-accent-bg);
-	color: var(--ttp-accent-strong);
+	background: var(--ttp-bg-subtle);
+	color: var(--ttp-text);
+	border-color: var(--ttp-border);
 	outline: none;
 }
 
 .ttp-card__info-mark {
 	display: inline-block;
-	transform: translateY(-0.5px);
+	font-style: italic;
 }
 
 .ttp-card__info-tooltip {
@@ -461,7 +551,12 @@
 	visibility: visible;
 }
 
-/* --- Badges + product slug ------------------------------------------- */
+/* --- Status badges (logger inspect, read-only annotations) ---------- *
+ * These are used by inspect renderers to label row state (e.g. SDK
+ * logger "logging on" / "consent yes/no"). Type signalling for
+ * Testing Items themselves now lives on the footer typemark, not
+ * these badges.
+ */
 
 .ttp-badge {
 	display: inline-flex;
@@ -471,25 +566,10 @@
 	border-radius: var(--ttp-radius-sm);
 	font-size: var(--ttp-text-xs);
 	font-weight: var(--ttp-weight-semibold);
-	text-transform: uppercase;
 	letter-spacing: var(--ttp-tracking-wider);
 	line-height: 1;
 	font-family: var(--ttp-font-sans);
-}
-
-.ttp-badge--scenario {
-	background: var(--ttp-success-bg);
-	color: var(--ttp-success-strong);
-}
-
-.ttp-badge--utility {
-	background: var(--ttp-accent-bg);
-	color: var(--ttp-accent-strong);
-}
-
-.ttp-badge--danger_utility {
-	background: var(--ttp-danger-bg);
-	color: var(--ttp-danger-strong);
+	text-transform: uppercase;
 }
 
 .ttp-badge--active {
@@ -497,18 +577,6 @@
 	color: var(--ttp-success-strong);
 	position: relative;
 	padding-left: var(--ttp-space-4);
-}
-
-.ttp-badge--status {
-	background: var(--ttp-bg-muted);
-	color: var(--ttp-text-muted);
-	text-transform: none;
-	letter-spacing: normal;
-}
-
-.ttp-badge--status-inactive {
-	background: var(--ttp-accent-bg);
-	color: var(--ttp-accent-strong);
 }
 
 .ttp-badge--active::before {
@@ -523,9 +591,122 @@
 	background: var(--ttp-success);
 }
 
-.ttp-product {
+.ttp-badge--status {
+	background: var(--ttp-bg-muted);
 	color: var(--ttp-text-muted);
-	font-size: var(--ttp-text-sm);
+	text-transform: none;
+	letter-spacing: normal;
+}
+
+.ttp-badge--status-inactive {
+	background: var(--ttp-accent-bg);
+	color: var(--ttp-accent-strong);
+	text-transform: none;
+	letter-spacing: normal;
+}
+
+/* --- Footer (type mark + product + edit affordance) ----------------- */
+
+.ttp-card__footer {
+	display: flex;
+	align-items: center;
+	gap: var(--ttp-space-2);
+	margin-top: auto;
+	padding-top: var(--ttp-space-2);
+	border-top: 1px solid var(--ttp-border-subtle);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text-subtle);
+}
+
+.ttp-typemark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: var(--ttp-radius-sm);
+	border: 1px solid var(--ttp-border-hair);
+	background: var(--ttp-bg-muted);
+	color: var(--ttp-text-muted);
+	font-family: var(--ttp-font-mono);
+	font-size: 11px;
+	font-weight: var(--ttp-weight-semibold);
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.ttp-typemark--danger_utility {
+	background: var(--ttp-danger-bg);
+	border-color: color-mix(in oklch, var(--ttp-danger) 28%, var(--ttp-border-hair));
+	color: var(--ttp-danger-strong);
+}
+
+.ttp-card__product {
+	flex: 1 1 auto;
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text-subtle);
+	letter-spacing: 0.01em;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --- Readout zone (mono inset) -------------------------------------- */
+
+.ttp-card__readout {
+	margin: 0;
+}
+
+.ttp-readout {
+	margin: 0;
+	padding: var(--ttp-space-2) var(--ttp-space-3);
+	background: var(--ttp-bg-muted);
+	border: 1px solid var(--ttp-border-hair);
+	border-radius: var(--ttp-radius-sm);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text-muted);
+	display: grid;
+	gap: 2px;
+}
+
+.ttp-readout--empty {
+	color: var(--ttp-text-subtle);
+	font-style: italic;
+}
+
+.ttp-readout__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+	gap: var(--ttp-space-3);
+	align-items: baseline;
+	min-width: 0;
+}
+
+.ttp-readout__key {
+	margin: 0;
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text-subtle);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ttp-readout__value {
+	margin: 0;
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-xs);
+	color: var(--ttp-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ttp-readout__value--empty {
+	color: var(--ttp-text-subtle);
+	font-style: italic;
 }
 
 /* --- Card body ------------------------------------------------------- */
@@ -533,7 +714,7 @@
 .ttp-card__body {
 	display: flex;
 	flex-direction: column;
-	gap: var(--ttp-space-3);
+	gap: var(--ttp-space-2);
 	margin: 0;
 }
 
@@ -580,64 +761,18 @@
 	box-shadow: var(--ttp-focus-ring);
 }
 
-/* Card meta bar + inline toolbar (reference date + embedded actions) */
-
-.ttp-card__meta-bar {
+.ttp-card__field-presets {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--ttp-space-2) var(--ttp-space-4);
-	margin-bottom: var(--ttp-space-3);
-	padding-bottom: var(--ttp-space-3);
-	border-bottom: 1px solid var(--ttp-border-subtle);
+	gap: var(--ttp-space-1);
+	margin-top: var(--ttp-space-1);
 }
 
-.ttp-card__toolbar-form {
-	display: inline-flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--ttp-space-2);
-	margin: 0;
-}
-
-.ttp-card__toolbar-lead {
-	font-size: var(--ttp-text-sm);
-	color: var(--ttp-text-muted);
-	white-space: nowrap;
-}
-
-.ttp-card__toolbar-lead::after {
-	content: "·";
-	margin-left: var(--ttp-space-2);
-	color: var(--ttp-border);
-}
-
-.ttp-card__toolbar-status {
-	font-size: var(--ttp-text-sm);
-	font-weight: var(--ttp-weight-medium);
-	color: var(--ttp-accent-strong);
-	white-space: nowrap;
-}
-
-.ttp-card__toolbar-status:not([hidden])::before {
-	content: "";
-	display: inline-block;
-	width: 0.75em;
-	height: 0.75em;
-	margin-right: var(--ttp-space-1);
-	border: 2px solid var(--ttp-accent);
-	border-top-color: transparent;
-	border-radius: 50%;
-	animation: ttp-spin 0.7s linear infinite;
-	vertical-align: -0.1em;
-}
-
-.ttp-card__toolbar-form[data-ttp-license-refresh-toolbar].ttp-card__toolbar--busy,
-.ttp-card__toolbar-form[data-ttp-license-refresh-toolbar][aria-busy="true"] {
+.ttp-card__field-preset.button {
+	min-height: 0;
 	padding: var(--ttp-space-1) var(--ttp-space-2);
-	border-radius: var(--ttp-radius-sm);
-	background: var(--ttp-accent-bg);
+	font-size: var(--ttp-text-xs);
+	line-height: 1;
 }
 
 /* Quick-install shortcuts (install_plugin_from_zip card) */
@@ -733,7 +868,7 @@
 	color: var(--ttp-accent-strong);
 }
 
-.ttp-card__run-status:not([hidden])::before {
+.ttp-card[aria-busy="true"] .ttp-card__run-status:not([hidden])::before {
 	content: "";
 	display: inline-block;
 	width: 0.75em;
@@ -746,7 +881,7 @@
 	vertical-align: -0.1em;
 }
 
-.ttp-wc-generate-progress {
+.ttp-progressive-progress:not([hidden]) {
 	display: flex;
 	flex: 1;
 	flex-direction: column;
@@ -754,25 +889,25 @@
 	min-width: 0;
 }
 
-.ttp-wc-generate-progress__track {
+.ttp-progressive-progress__track {
 	overflow: hidden;
 	height: 0.5rem;
 	border-radius: var(--ttp-radius-pill);
 	background: var(--ttp-bg-muted);
 }
 
-.ttp-wc-generate-progress__bar {
+.ttp-progressive-progress__bar {
 	height: 100%;
 	border-radius: inherit;
 	background: var(--ttp-accent);
 	transition: width 0.2s ease;
 }
 
-.ttp-wc-generate-progress__status {
+.ttp-progressive-progress__status {
 	margin: 0;
 }
 
-.ttp-card__actions:has(.ttp-wc-generate-progress:not([hidden])) {
+.ttp-card__actions:has(.ttp-progressive-progress:not([hidden])) {
 	flex-wrap: wrap;
 	align-items: center;
 }
@@ -861,58 +996,107 @@
 	outline: 0;
 }
 
-/* --- Toggle (real switch) -------------------------------------------- */
+/* --- Rocker switch (instant toggle) --------------------------------- *
+ * Physical-switch metaphor: both OFF and ON labels are visible at all
+ * times. The track + knob slide between them. Clicking the rocker
+ * flips the underlying checkbox, which auto-submits the form to the
+ * /toggle endpoint — no separate Save step.
+ */
 
-.ttp-toggle {
+.ttp-rocker-form {
+	margin: 0;
+	padding: 0;
+}
+
+.ttp-rocker__input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.ttp-rocker {
 	display: inline-flex;
 	align-items: center;
 	gap: var(--ttp-space-2);
+	padding: var(--ttp-space-1) var(--ttp-space-2);
+	border: 1px solid var(--ttp-border);
+	border-radius: var(--ttp-radius-sm);
+	background: var(--ttp-bg-muted);
 	cursor: pointer;
-	font-size: var(--ttp-text-base);
-	font-weight: var(--ttp-weight-medium);
-	color: var(--ttp-text);
 	user-select: none;
+	transition: border-color var(--ttp-duration-fast) var(--ttp-ease), background var(--ttp-duration-fast) var(--ttp-ease);
 }
 
-.ttp-toggle input[type="checkbox"] {
-	-webkit-appearance: none;
-	appearance: none;
-	margin: 0;
-	width: 32px;
-	height: 18px;
-	background: var(--ttp-border-strong);
-	border: 0;
-	border-radius: 999px;
+.ttp-rocker:hover {
+	border-color: var(--ttp-border-strong);
+}
+
+.ttp-rocker__input:focus-visible + .ttp-rocker {
+	outline: 0;
+	box-shadow: var(--ttp-focus-ring);
+}
+
+.ttp-rocker__side {
+	font-family: var(--ttp-font-sans);
+	font-size: var(--ttp-text-xs);
+	font-weight: var(--ttp-weight-semibold);
+	letter-spacing: var(--ttp-tracking-wider);
+	text-transform: uppercase;
+	color: var(--ttp-text-subtle);
+	transition: color var(--ttp-duration-fast) var(--ttp-ease);
+}
+
+.ttp-rocker__input:not(:checked) ~ .ttp-rocker .ttp-rocker__side--off {
+	color: var(--ttp-text);
+}
+
+.ttp-rocker__input:checked ~ .ttp-rocker .ttp-rocker__side--on {
+	color: var(--ttp-success-strong);
+}
+
+.ttp-rocker__track {
 	position: relative;
-	cursor: pointer;
-	transition: background var(--ttp-duration) var(--ttp-ease);
+	display: inline-block;
+	width: 34px;
+	height: 18px;
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-border-strong);
+	border-radius: 999px;
+	transition: background var(--ttp-duration) var(--ttp-ease), border-color var(--ttp-duration) var(--ttp-ease);
 	flex-shrink: 0;
 }
 
-.ttp-toggle input[type="checkbox"]::after {
-	content: "";
+.ttp-rocker__knob {
 	position: absolute;
-	top: 2px;
-	left: 2px;
+	top: 1px;
+	left: 1px;
 	width: 14px;
 	height: 14px;
-	background: var(--ttp-bg-subtle);
 	border-radius: 50%;
+	background: var(--ttp-border-strong);
 	box-shadow: var(--ttp-shadow-sm);
-	transition: left var(--ttp-duration) var(--ttp-ease);
+	transition: left var(--ttp-duration) var(--ttp-ease), background var(--ttp-duration) var(--ttp-ease);
 }
 
-.ttp-toggle input[type="checkbox"]:checked {
+.ttp-rocker__input:checked ~ .ttp-rocker .ttp-rocker__track {
+	background: var(--ttp-success-bg);
+	border-color: var(--ttp-success);
+}
+
+.ttp-rocker__input:checked ~ .ttp-rocker .ttp-rocker__knob {
+	left: 17px;
 	background: var(--ttp-success);
 }
 
-.ttp-toggle input[type="checkbox"]:checked::after {
-	left: 16px;
-}
-
-.ttp-toggle input[type="checkbox"]:focus-visible {
-	outline: 0;
-	box-shadow: var(--ttp-focus-ring);
+.ttp-rocker[aria-busy="true"] {
+	opacity: 0.72;
+	cursor: progress;
 }
 
 /* --- Card actions ---------------------------------------------------- */
@@ -935,6 +1119,12 @@ form.ttp-card__body + .ttp-card__actions {
 	margin: 0;
 	padding: 0;
 	display: inline-flex;
+}
+
+/* Scenario action row: Save/Discard on the left, rocker pushed to the right. */
+
+.ttp-card__actions--scenario .ttp-rocker-form {
+	margin-left: auto;
 }
 
 /* Tighten WP buttons inside the dashboard */
@@ -1011,44 +1201,6 @@ form.ttp-card__body + .ttp-card__actions {
 	font-weight: var(--ttp-weight-semibold);
 }
 
-.ttp-card__meta-bar .ttp-card__reference {
-	margin: 0;
-}
-
-.ttp-card__saved {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: var(--ttp-space-1) var(--ttp-space-3);
-	margin: 0;
-	padding: var(--ttp-space-2) var(--ttp-space-3);
-	background: var(--ttp-bg-muted);
-	border: 1px solid var(--ttp-border-hair);
-	border-radius: var(--ttp-radius-sm);
-	font-size: var(--ttp-text-sm);
-	color: var(--ttp-text-muted);
-	line-height: var(--ttp-leading-snug);
-}
-
-.ttp-card__saved-label {
-	font-size: var(--ttp-text-xs);
-	font-weight: var(--ttp-weight-semibold);
-	letter-spacing: var(--ttp-tracking-wider);
-	text-transform: uppercase;
-	color: var(--ttp-text-subtle);
-}
-
-.ttp-card__saved-pair {
-	font-family: var(--ttp-font-mono);
-	color: var(--ttp-text);
-}
-
-.ttp-card__saved-pair strong {
-	font-family: var(--ttp-font-sans);
-	font-weight: var(--ttp-weight-semibold);
-	color: var(--ttp-text-muted);
-	margin-right: var(--ttp-space-1);
-}
 
 .ttp-flash {
 	position: relative;
@@ -1126,7 +1278,52 @@ form.ttp-card__body + .ttp-card__actions {
 	}
 }
 
-/* --- Data table ------------------------------------------------------ */
+/* --- Data table ------------------------------------------------------ *
+ * Inside `.ttp-card__inspect` the table may carry long mono values
+ * (license keys, option names). Allow horizontal scroll inside the
+ * card body instead of letting the table push the card wider than
+ * its grid cell.
+ */
+
+.ttp-card__inspect {
+	max-width: 100%;
+	min-width: 0;
+	overflow-x: auto;
+}
+
+.ttp-card__inspect--lazy {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ttp-space-2);
+	align-items: flex-start;
+	padding: var(--ttp-space-3);
+	background: var(--ttp-bg-muted);
+	border: 1px dashed var(--ttp-border);
+	border-radius: var(--ttp-radius-sm);
+}
+
+.ttp-card__inspect--lazy .ttp-note {
+	background: transparent;
+	border: 0;
+	padding: 0;
+	color: var(--ttp-text-muted);
+}
+
+.ttp-inspect-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: var(--ttp-space-2);
+}
+
+.ttp-card__inspect--loaded {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ttp-space-2);
+}
+
+.ttp-card__inspect--loaded .ttp-inspect-toolbar {
+	margin-bottom: 0;
+}
 
 .ttp-data-table {
 	width: 100%;
@@ -1620,6 +1817,208 @@ form.ttp-card__body + .ttp-card__actions {
 
 .ttp-logger-telemetry-table {
 	margin-top: var(--ttp-space-2);
+}
+
+/* --- Optimole URL transformer ---------------------------------------- */
+
+.ttp-optimole-settings {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--ttp-space-1) var(--ttp-space-2);
+	margin: 0 0 var(--ttp-space-4);
+	padding: var(--ttp-space-2) var(--ttp-space-3);
+	font-size: var(--ttp-text-sm);
+	color: var(--ttp-text-muted);
+	background: var(--ttp-bg-muted);
+	border: 1px solid var(--ttp-border-hair);
+	border-radius: var(--ttp-radius-sm);
+}
+
+.ttp-optimole-settings strong {
+	color: var(--ttp-text);
+	font-weight: var(--ttp-weight-semibold);
+}
+
+.ttp-optimole-settings__warn {
+	color: var(--ttp-error-strong, var(--ttp-error, #b32d2e));
+	font-weight: var(--ttp-weight-medium);
+}
+
+.ttp-optimole-info {
+	margin: 0;
+	padding: var(--ttp-space-2) var(--ttp-space-3);
+	font-size: var(--ttp-text-sm);
+	color: var(--ttp-text);
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-border);
+	border-radius: var(--ttp-radius-sm);
+}
+
+/* 3-column form layout for the wide Optimole utility card */
+form#ttp-utility-optimole_url_transformer.ttp-card__body {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--ttp-space-3) var(--ttp-space-4);
+}
+
+form#ttp-utility-optimole_url_transformer.ttp-card__body
+	.ttp-card__field:first-of-type {
+	grid-column: 1 / -1;
+}
+
+/* 3-column form layout for the Picsum import utility card */
+form#ttp-utility-import_random_images.ttp-card__body {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--ttp-space-3) var(--ttp-space-4);
+	align-items: end;
+}
+
+/* The URL input never has a colored validity border in this dashboard. */
+.ttp-card__field input[type="url"]:invalid,
+.ttp-card__field input[type="url"]:user-invalid {
+	box-shadow: none;
+	border-color: var(--ttp-border);
+}
+
+.ttp-optimole-result {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ttp-space-4);
+	margin-top: var(--ttp-space-2);
+	padding: var(--ttp-space-4);
+	background: var(--ttp-accent-bg);
+	border: 1px solid var(--ttp-border-hair);
+	border-radius: var(--ttp-radius-sm);
+}
+
+.ttp-optimole-result__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--ttp-space-2);
+	margin: 0;
+}
+
+.ttp-optimole-result__badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px var(--ttp-space-2);
+	font-size: var(--ttp-text-xs);
+	font-weight: var(--ttp-weight-semibold);
+	letter-spacing: var(--ttp-tracking-wider);
+	text-transform: uppercase;
+	color: var(--ttp-accent-strong);
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-accent);
+	border-radius: var(--ttp-radius-sm);
+}
+
+.ttp-optimole-result__subtitle {
+	color: var(--ttp-text-muted);
+	font-size: var(--ttp-text-xs);
+	letter-spacing: 0.02em;
+}
+
+.ttp-optimole-result__url {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ttp-space-1);
+}
+
+.ttp-optimole-result__url-label {
+	color: var(--ttp-text);
+	font-size: var(--ttp-text-xs);
+	font-weight: var(--ttp-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: var(--ttp-tracking-wider);
+}
+
+.ttp-optimole-result__url-link {
+	text-decoration: none;
+}
+
+.ttp-optimole-result__url-link code {
+	display: block;
+	max-width: 100%;
+	padding: var(--ttp-space-2) var(--ttp-space-3);
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-sm);
+	color: var(--ttp-accent-strong);
+	background: var(--ttp-bg-subtle);
+	border: 1px solid var(--ttp-border);
+	border-radius: var(--ttp-radius-sm);
+	overflow-wrap: anywhere;
+	word-break: break-all;
+	transition: border-color var(--ttp-duration-fast) var(--ttp-ease), box-shadow var(--ttp-duration-fast) var(--ttp-ease);
+}
+
+.ttp-optimole-result__url-link:hover code {
+	border-color: var(--ttp-accent);
+}
+
+.ttp-optimole-result__url-link:focus-visible code {
+	border-color: var(--ttp-accent);
+	box-shadow: var(--ttp-focus-ring);
+	outline: 0;
+}
+
+.ttp-optimole-result__previews {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--ttp-space-4);
+}
+
+.ttp-optimole-result__preview {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--ttp-space-2);
+	padding: var(--ttp-space-3);
+	background: var(--ttp-bg-muted);
+	border: 1px solid var(--ttp-border-hair);
+	border-radius: var(--ttp-radius-sm);
+}
+
+.ttp-optimole-result__preview img {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 320px;
+	object-fit: contain;
+	background: #fff;
+}
+
+.ttp-optimole-result__preview-caption {
+	color: var(--ttp-text);
+	font-size: var(--ttp-text-xs);
+	font-weight: var(--ttp-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: var(--ttp-tracking-wider);
+}
+
+.ttp-optimole-result__table {
+	margin: 0;
+}
+
+.ttp-optimole-result__table td:nth-child(2),
+.ttp-optimole-result__table td:nth-child(3) {
+	font-family: var(--ttp-font-mono);
+	font-size: var(--ttp-text-sm);
+	overflow-wrap: anywhere;
+	word-break: break-all;
+}
+
+.ttp-optimole-result__timestamp {
+	margin: 0;
+	color: var(--ttp-text-muted);
+	font-size: var(--ttp-text-xs);
+}
+
+@media (max-width: 782px) {
+	.ttp-optimole-result__previews {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* --- Utility classes ------------------------------------------------- */

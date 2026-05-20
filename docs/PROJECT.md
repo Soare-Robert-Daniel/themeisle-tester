@@ -41,6 +41,7 @@ The Dashboard is fully PHP-rendered, with a small vanilla-JS enhancement for tab
 - Active Scenarios are shown in a sticky admin notice outside the Dashboard so testers do not forget runtime behavior has been overridden.
 - Internal code should stay modest: prefer a small registry, store, applicator, admin, and REST layer before introducing extra factories, commands, or serializers.
 - Product plugins must extend Themeisle Tester through public hooks and callbacks, not by reaching into internal classes.
+- Testing Items may declare optional presentation metadata (`render_inspect`, `render_run`, `inspect_on_load`, `run_ui`) so addons own custom card markup without editing `admin/views/card-utility.php`. Heavy inspect utilities set `inspect_on_load` to `false` and load via REST + Datastar morph.
 
 Public API naming follows the `ttp` prefix:
 

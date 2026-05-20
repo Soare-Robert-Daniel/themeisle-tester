@@ -69,6 +69,49 @@ class TTP_Dashboard_Actions {
 	}
 
 	/**
+	 * Flip a Scenario's enabled flag without touching saved params.
+	 *
+	 * Powers the rocker-switch instant-toggle endpoint. Saved params are
+	 * preserved so a configured Scenario can be flipped back on without
+	 * re-entering its configuration.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item    Item.
+	 * @param bool                $enabled Enabled flag.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	public function set_scenario_enabled( $item, $enabled ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $this->record_and_return( $item, __( 'Toggle Scenario', 'themeisle-tester' ), $availability, array() );
+		}
+
+		$this->scenario_store->set_enabled( $item['id'], $enabled );
+
+		$message = $enabled
+			? __( 'Scenario enabled.', 'themeisle-tester' )
+			: __( 'Scenario disabled.', 'themeisle-tester' );
+
+		return $this->record_and_return(
+			$item,
+			__( 'Toggle Scenario', 'themeisle-tester' ),
+			array(
+				'message' => $message,
+				'details' => array(
+					sprintf(
+						/* translators: %s: enabled/disabled status. */
+						__( 'State: %s', 'themeisle-tester' ),
+						$enabled ? __( 'Enabled', 'themeisle-tester' ) : __( 'Disabled', 'themeisle-tester' )
+					),
+				),
+			),
+			array()
+		);
+	}
+
+	/**
 	 * Save Scenario state.
 	 *
 	 * @phpstan-param NormalizedItem $item
@@ -181,6 +224,35 @@ class TTP_Dashboard_Actions {
 		}
 
 		return $this->record_and_return( $item, __( 'Run Utility', 'themeisle-tester' ), $this->with_action_details( $result, array() ), array() );
+	}
+
+	/**
+	 * Inspect Utility or Danger Utility (read-only).
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item    Item.
+	 * @param array<string,mixed> $payload Request payload.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	public function inspect_item( $item, $payload ) {
+		$availability = $this->availability_error( $item );
+
+		if ( is_wp_error( $availability ) ) {
+			return $availability;
+		}
+
+		if ( ! is_callable( $item['inspect'] ) ) {
+			return new WP_Error( 'ttp_utility_not_inspectable', __( 'This Testing Item does not provide inspector data.', 'themeisle-tester' ), array( 'status' => 400 ) );
+		}
+
+		$result = call_user_func( $item['inspect'], $item, $payload );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return is_array( $result ) ? $result : array( 'result' => $result );
 	}
 
 	/**

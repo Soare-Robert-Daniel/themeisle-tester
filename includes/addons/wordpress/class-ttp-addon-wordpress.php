@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers WordPress admin utilities for QA workflows.
+ *
+ * @phpstan-import-type NormalizedItem from TTP_Item_Registry
  */
 class TTP_Addon_WordPress implements TTP_Addon {
 
@@ -22,21 +24,34 @@ class TTP_Addon_WordPress implements TTP_Addon {
 	private $popular_catalog = null;
 
 	/**
+	 * Picsum image importer (delegates the import_random_images item).
+	 *
+	 * @var TTP_WordPress_Picsum_Importer
+	 */
+	private $picsum_importer;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->picsum_importer = new TTP_WordPress_Picsum_Importer();
+	}
+
+	/**
 	 * Register WordPress Testing Items.
 	 *
 	 * @param TTP_Item_Registry $registry Item registry.
 	 * @return void
 	 */
 	public function register( TTP_Item_Registry $registry ) {
-		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
-		$wordpress         = __( 'WordPress', 'themeisle-tester' );
-		$catalog_slugs     = array_keys( $this->get_popular_catalog() );
+		$wordpress     = __( 'WordPress', 'themeisle-tester' );
+		$catalog_slugs = array_keys( $this->get_popular_catalog() );
 
 		$registry->register(
 			array(
 				'id'                 => 'install_plugin_from_zip',
 				'type'               => 'utility',
-				'categories'         => array( $install_licensing ),
+				'categories'         => array( $wordpress ),
 				'product'            => $wordpress,
 				'label'              => __( 'Install plugins', 'themeisle-tester' ),
 				'description'        => __( 'Quick-install popular plugins or install custom builds from ZIP URLs.', 'themeisle-tester' ),
@@ -62,9 +77,15 @@ class TTP_Addon_WordPress implements TTP_Addon {
 				'is_available'       => array( $this, 'is_plugin_install_available' ),
 				'unavailable_reason' => array( $this, 'plugin_install_unavailable_reason' ),
 				'inspect'            => array( $this, 'inspect_plugin_install' ),
+				'render_inspect'     => array( $this, 'render_plugin_install_inspect' ),
+				'run_ui'             => array(
+					'transport' => 'zip_batch',
+				),
 				'run'                => array( $this, 'run_install_plugin_from_zip' ),
 			)
 		);
+
+		$this->picsum_importer->register( $registry, $wordpress );
 	}
 
 	/**
@@ -632,5 +653,45 @@ class TTP_Addon_WordPress implements TTP_Addon {
 		}
 
 		return $urls;
+	}
+
+	/**
+	 * Render quick-install shortcuts above the ZIP install fields when needed.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_plugin_install_inspect( $item, $inspect_result, TTP_Admin_Page $page ) {
+
+		if ( ! is_array( $inspect_result ) || ! isset( $inspect_result['shortcuts'] ) || ! is_array( $inspect_result['shortcuts'] ) ) {
+			return;
+		}
+
+		$has_pending_shortcuts = false;
+
+		foreach ( $inspect_result['shortcuts'] as $shortcut_row ) {
+			if ( ! is_array( $shortcut_row ) ) {
+				continue;
+			}
+
+			$plugin_status = isset( $shortcut_row['status'] ) && is_string( $shortcut_row['status'] ) ? $shortcut_row['status'] : '';
+
+			if ( 'active' !== $plugin_status ) {
+				$has_pending_shortcuts = true;
+				break;
+			}
+		}
+
+		if ( ! $has_pending_shortcuts ) {
+			return;
+		}
+
+		$page->render_plugin_install_shortcuts( $item, $inspect_result['shortcuts'] );
+		echo '<hr class="ttp-plugin-shortcuts__divider">';
+		echo '<p class="ttp-plugin-shortcuts__zip-label">' . esc_html__( 'Custom ZIP URLs', 'themeisle-tester' ) . '</p>';
 	}
 }

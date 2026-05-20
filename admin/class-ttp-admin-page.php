@@ -150,11 +150,32 @@ class TTP_Admin_Page {
 	private $ppom_last_target_renderer;
 
 	/**
+	 * Super Page Cache cached-files inspect renderer.
+	 *
+	 * @var TTP_SPC_Cached_Files_Renderer
+	 */
+	private $spc_cached_files_renderer;
+
+	/**
+	 * Optimole URL transformer inspect renderer.
+	 *
+	 * @var TTP_Optimole_Result_Renderer
+	 */
+	private $optimole_result_renderer;
+
+	/**
 	 * Scenario saved-summary renderer.
 	 *
 	 * @var TTP_Scenario_Summary_Renderer
 	 */
 	private $scenario_summary_renderer;
+
+	/**
+	 * Card body presenter.
+	 *
+	 * @var TTP_Card_Presenter
+	 */
+	private $card_presenter;
 
 	/**
 	 * Constructor.
@@ -184,7 +205,19 @@ class TTP_Admin_Page {
 		$this->ppom_inspect_renderer     = new TTP_PPOM_Inspect_Renderer();
 		$this->logger_inspect_renderer   = new TTP_Logger_Inspect_Renderer( $this->datastar );
 		$this->ppom_last_target_renderer = new TTP_PPOM_Last_Target_Renderer();
+		$this->spc_cached_files_renderer = new TTP_SPC_Cached_Files_Renderer();
+		$this->optimole_result_renderer  = new TTP_Optimole_Result_Renderer();
 		$this->scenario_summary_renderer = new TTP_Scenario_Summary_Renderer();
+		$this->card_presenter            = new TTP_Card_Presenter( $this );
+	}
+
+	/**
+	 * Card presenter for utility/danger inspect and run sections.
+	 *
+	 * @return TTP_Card_Presenter
+	 */
+	public function get_card_presenter() {
+		return $this->card_presenter;
 	}
 
 	/**
@@ -414,15 +447,6 @@ class TTP_Admin_Page {
 	}
 
 	/**
-	 * Render the embedded force license refresh toolbar (license / install editor cards).
-	 *
-	 * @return void
-	 */
-	public function render_force_license_refresh_action() {
-		$this->danger_table_renderer->render_force_license_refresh_action();
-	}
-
-	/**
 	 * Render install rows.
 	 *
 	 * @phpstan-param NormalizedItem $item
@@ -516,5 +540,25 @@ class TTP_Admin_Page {
 	 */
 	public function render_ppom_last_target( $result ) {
 		$this->ppom_last_target_renderer->render( $result );
+	}
+
+	/**
+	 * Render the Super Page Cache cached-files inspect output.
+	 *
+	 * @param mixed $result Inspect callback result.
+	 * @return void
+	 */
+	public function render_spc_cached_files( $result ) {
+		$this->spc_cached_files_renderer->render( $result );
+	}
+
+	/**
+	 * Render the Optimole URL transformer inspect output.
+	 *
+	 * @param mixed $result Inspect callback result.
+	 * @return void
+	 */
+	public function render_optimole_result( $result ) {
+		$this->optimole_result_renderer->render( $result );
 	}
 }

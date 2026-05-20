@@ -7,8 +7,9 @@
  *    (e.g. the multi-URL plugin installer). Inputs submit as ttp_params[id][].
  * 3. PPOM inspect pagination — shows up to [data-ttp-ppom-per-page] field groups
  *    per page inside [data-ttp-ppom-pagination] containers.
- * 4. WooCommerce generate progress — creates products sequentially with a
- *    progress bar beside the Run button.
+ * 4. Progressive run controller — for utilities whose run_ui.transport is
+ *    "progressive", fires one POST per step against the form's
+ *    data-ttp-progressive-endpoint and renders progress beside the Run button.
  *
  * Datastar (admin/js/libs/datastar.min.js) handles in-place form submits;
  * this file only enhances tabs and list fields. See ADR-0006 and ADR-0008.
@@ -178,6 +179,39 @@
 		scope.querySelectorAll("[data-ttp-list]").forEach(initListField);
 	}
 
+	function initRockerForm(form) {
+		if (
+			!(form instanceof HTMLFormElement) ||
+			form.dataset.ttpRockerReady === "true"
+		) {
+			return;
+		}
+
+		form.dataset.ttpRockerReady = "true";
+
+		const input = form.querySelector("[data-ttp-rocker-input]");
+
+		if (!(input instanceof HTMLInputElement)) {
+			return;
+		}
+
+		input.addEventListener("change", () => {
+			if (typeof form.requestSubmit === "function") {
+				form.requestSubmit();
+				return;
+			}
+
+			form.submit();
+		});
+	}
+
+	function initRockerFormsIn(root) {
+		const scope = root instanceof Element ? root : document;
+		scope
+			.querySelectorAll("form[data-ttp-rocker-form]")
+			.forEach(initRockerForm);
+	}
+
 	function formatPpomPageStatus(template, currentPage, totalPages) {
 		return template
 			.replace("%1$d", String(currentPage))
@@ -185,13 +219,19 @@
 	}
 
 	function initPpomPagination(pager) {
-		if (!(pager instanceof HTMLElement) || pager.dataset.ttpPpomPaginationReady === "true") {
+		if (
+			!(pager instanceof HTMLElement) ||
+			pager.dataset.ttpPpomPaginationReady === "true"
+		) {
 			return;
 		}
 
 		const groups = Array.from(pager.querySelectorAll("[data-ttp-ppom-group]"));
 		const nav = pager.querySelector("[data-ttp-ppom-pagination-nav]");
-		const perPage = Number.parseInt(pager.getAttribute("data-ttp-ppom-per-page") || "5", 10);
+		const perPage = Number.parseInt(
+			pager.getAttribute("data-ttp-ppom-per-page") || "5",
+			10,
+		);
 		const pageSize = Number.isFinite(perPage) && perPage > 0 ? perPage : 5;
 
 		if (groups.length <= pageSize || !(nav instanceof HTMLElement)) {
@@ -202,7 +242,8 @@
 		const prevBtn = nav.querySelector("[data-ttp-ppom-prev]");
 		const nextBtn = nav.querySelector("[data-ttp-ppom-next]");
 		const status = nav.querySelector("[data-ttp-ppom-page-status]");
-		const statusFormat = nav.getAttribute("data-ttp-ppom-status-format") || "Page %1$d of %2$d";
+		const statusFormat =
+			nav.getAttribute("data-ttp-ppom-status-format") || "Page %1$d of %2$d";
 		const totalPages = Math.ceil(groups.length / pageSize);
 		let currentPage = 1;
 
@@ -253,7 +294,9 @@
 
 	function initPpomPaginationIn(root) {
 		const scope = root instanceof Element ? root : document;
-		scope.querySelectorAll("[data-ttp-ppom-pagination]").forEach(initPpomPagination);
+		scope
+			.querySelectorAll("[data-ttp-ppom-pagination]")
+			.forEach(initPpomPagination);
 	}
 
 	function dismissToast(toast) {
@@ -268,7 +311,10 @@
 	}
 
 	function initToast(toast) {
-		if (!(toast instanceof HTMLElement) || toast.dataset.ttpToastReady === "true") {
+		if (
+			!(toast instanceof HTMLElement) ||
+			toast.dataset.ttpToastReady === "true"
+		) {
 			return;
 		}
 
@@ -399,16 +445,6 @@
 		}
 	}
 
-	function licenseRefreshFormFromTarget(target) {
-		if (!(target instanceof Element)) {
-			return null;
-		}
-
-		return target.matches("form[data-ttp-license-refresh-form]")
-			? target
-			: target.closest("form[data-ttp-license-refresh-form]");
-	}
-
 	function loggerSendFormFromTarget(target) {
 		if (!(target instanceof Element)) {
 			return null;
@@ -466,53 +502,6 @@
 		}
 	}
 
-	function setLicenseRefreshBusy(form, busy) {
-		if (!(form instanceof HTMLFormElement)) {
-			return;
-		}
-
-		const status = form.querySelector("[data-ttp-license-refresh-status]");
-		const button = form.querySelector("[data-ttp-license-refresh-submit]");
-		const workingLabel =
-			(button instanceof HTMLButtonElement && button.dataset.ttpWorkingLabel) ||
-			"Refreshing…";
-
-		if (busy) {
-			form.classList.add("ttp-card__toolbar--busy");
-			form.setAttribute("aria-busy", "true");
-
-			if (status instanceof HTMLElement) {
-				status.textContent = workingLabel;
-				status.hidden = false;
-			}
-
-			if (button instanceof HTMLButtonElement) {
-				button.disabled = true;
-				button.textContent = workingLabel;
-			}
-
-			return;
-		}
-
-		form.classList.remove("ttp-card__toolbar--busy");
-		form.removeAttribute("aria-busy");
-
-		if (status instanceof HTMLElement) {
-			status.textContent = "";
-			status.hidden = true;
-		}
-
-		if (button instanceof HTMLButtonElement) {
-			button.disabled = false;
-
-			const defaultLabel = button.dataset.ttpDefaultLabel;
-
-			if (defaultLabel) {
-				button.textContent = defaultLabel;
-			}
-		}
-	}
-
 	function formatProgressLabel(template, ...values) {
 		let text = template;
 
@@ -527,7 +516,7 @@
 		return text;
 	}
 
-	function readWcGenerateTotal(form) {
+	function readProgressiveTotal(form) {
 		const countInput = form.querySelector('[name="ttp_params[count]"]');
 		const raw = countInput instanceof HTMLInputElement ? countInput.value : "5";
 		const total = Number.parseInt(raw, 10);
@@ -539,7 +528,7 @@
 		return Math.min(total, 25);
 	}
 
-	function wcGeneratePercent(current, total, inFlight) {
+	function progressivePercent(current, total, inFlight) {
 		if (total <= 0) {
 			return 0;
 		}
@@ -565,14 +554,14 @@
 		return fallback;
 	}
 
-	function setWcGenerateBusy(form, busy) {
+	function setProgressiveBusy(form, busy) {
 		if (!(form instanceof HTMLFormElement)) {
 			return;
 		}
 
 		const card = form.closest(".ttp-card");
-		const progress = card?.querySelector("[data-ttp-wc-generate-progress]");
-		const button = card?.querySelector("[data-ttp-wc-generate-submit]");
+		const progress = card?.querySelector("[data-ttp-progressive-progress]");
+		const button = card?.querySelector("[data-ttp-progressive-submit]");
 
 		if (busy) {
 			card?.classList.add("ttp-card--busy");
@@ -597,7 +586,7 @@
 		}
 	}
 
-	function updateWcGenerateProgress(
+	function updateProgressiveProgress(
 		card,
 		current,
 		total,
@@ -608,11 +597,11 @@
 			return;
 		}
 
-		const progress = card.querySelector("[data-ttp-wc-generate-progress]");
-		const track = card.querySelector("[data-ttp-wc-generate-progress-track]");
-		const bar = card.querySelector("[data-ttp-wc-generate-progress-bar]");
-		const status = card.querySelector("[data-ttp-wc-generate-status]");
-		const percent = wcGeneratePercent(current, total, inFlight);
+		const progress = card.querySelector("[data-ttp-progressive-progress]");
+		const track = card.querySelector("[data-ttp-progressive-progress-track]");
+		const bar = card.querySelector("[data-ttp-progressive-progress-bar]");
+		const status = card.querySelector("[data-ttp-progressive-status]");
+		const percent = progressivePercent(current, total, inFlight);
 
 		if (track instanceof HTMLElement) {
 			track.setAttribute("aria-valuenow", String(percent));
@@ -631,13 +620,13 @@
 		}
 	}
 
-	async function runWcGenerateForm(form) {
+	async function runProgressiveForm(form) {
 		const config = window.ttpDashboard;
 		const card = form.closest(".ttp-card");
-		const labels = config?.wcGenerate || {};
+		const labels = config?.progressive || {};
 
 		if (!config?.restUrl || !config?.restNonce) {
-			updateWcGenerateProgress(
+			updateProgressiveProgress(
 				card,
 				0,
 				1,
@@ -648,12 +637,26 @@
 			return;
 		}
 
-		const endpoint = `${config.restUrl}utilities/woocommerce_generate_random_products/run`;
-		const total = readWcGenerateTotal(form);
+		const endpointPath = form.dataset.ttpProgressiveEndpoint;
+
+		if (!endpointPath) {
+			updateProgressiveProgress(
+				card,
+				0,
+				1,
+				labels.config ||
+					"Dashboard configuration is missing. Reload the page and try again.",
+			);
+
+			return;
+		}
+
+		const endpoint = `${config.restUrl}${endpointPath}`;
+		const total = readProgressiveTotal(form);
 		let batch = "";
 		const stepTimeoutMs = 120000;
 
-		setWcGenerateBusy(form, true);
+		setProgressiveBusy(form, true);
 
 		try {
 			for (let index = 1; index <= total; index++) {
@@ -667,18 +670,12 @@
 				}
 
 				const creatingLabel = formatProgressLabel(
-					labels.creating || "Creating product %1$d of %2$d…",
+					labels.creating || "Step %1$d of %2$d…",
 					index,
 					total,
 				);
 
-				updateWcGenerateProgress(
-					card,
-					index - 1,
-					total,
-					creatingLabel,
-					true,
-				);
+				updateProgressiveProgress(card, index - 1, total, creatingLabel, true);
 
 				let response;
 
@@ -699,8 +696,7 @@
 						fetchError.name === "TimeoutError"
 					) {
 						throw new Error(
-							labels.timeout ||
-								"The request timed out. Try fewer products or a simpler product type.",
+							labels.timeout || "The request timed out. Try a smaller batch.",
 						);
 					}
 
@@ -711,10 +707,7 @@
 
 				if (!response.ok) {
 					throw new Error(
-						restErrorMessage(
-							data,
-							labels.failed || "Product creation failed.",
-						),
+						restErrorMessage(data, labels.failed || "Run failed."),
 					);
 				}
 
@@ -727,13 +720,13 @@
 						? data.details[0]
 						: "";
 
-				updateWcGenerateProgress(
+				updateProgressiveProgress(
 					card,
 					index,
 					total,
 					detail
 						? formatProgressLabel(
-								labels.created || "Created product %1$d — %2$s",
+								labels.created || "Step %1$d — %2$s",
 								index,
 								detail,
 							)
@@ -743,53 +736,58 @@
 				);
 			}
 
-			updateWcGenerateProgress(
+			updateProgressiveProgress(
 				card,
 				total,
 				total,
 				formatProgressLabel(
-					labels.complete || "Created %1$d products (batch %2$s).",
+					labels.complete || "Completed %1$d steps (batch %2$s).",
 					total,
 					batch,
 				),
 			);
 		} catch (error) {
-			const status = card?.querySelector("[data-ttp-wc-generate-status]");
+			const status = card?.querySelector("[data-ttp-progressive-status]");
 
 			if (status instanceof HTMLElement) {
 				status.textContent =
 					error instanceof Error
 						? error.message
-						: labels.failed || "Product creation failed.";
+						: labels.failed || "Run failed.";
 			}
 
-			const progress = card?.querySelector("[data-ttp-wc-generate-progress]");
+			const progress = card?.querySelector("[data-ttp-progressive-progress]");
 
 			if (progress instanceof HTMLElement) {
 				progress.hidden = false;
 			}
 		} finally {
-			setWcGenerateBusy(form, false);
+			setProgressiveBusy(form, false);
 		}
 	}
 
-	function initWcGenerateForm(form) {
-		if (!(form instanceof HTMLFormElement) || form.dataset.ttpWcGenerateReady === "true") {
+	function initProgressiveForm(form) {
+		if (
+			!(form instanceof HTMLFormElement) ||
+			form.dataset.ttpProgressiveReady === "true"
+		) {
 			return;
 		}
 
-		form.dataset.ttpWcGenerateReady = "true";
+		form.dataset.ttpProgressiveReady = "true";
 
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
-			void runWcGenerateForm(form);
+			void runProgressiveForm(form);
 		});
 	}
 
-	function initWcGenerateFormsIn(root) {
+	function initProgressiveFormsIn(root) {
 		const scope = root instanceof Element ? root : document;
 
-		scope.querySelectorAll("form[data-ttp-wc-generate-form]").forEach(initWcGenerateForm);
+		scope
+			.querySelectorAll("form[data-ttp-progressive-form]")
+			.forEach(initProgressiveForm);
 	}
 
 	function handleDatastarFetch(event) {
@@ -801,18 +799,6 @@
 		const target = event.target;
 
 		if (!(target instanceof Element)) {
-			return;
-		}
-
-		const licenseRefreshForm = licenseRefreshFormFromTarget(target);
-
-		if (licenseRefreshForm) {
-			if (fetchType === "started") {
-				setLicenseRefreshBusy(licenseRefreshForm, true);
-			} else if (fetchType === "finished" || fetchType === "error") {
-				setLicenseRefreshBusy(licenseRefreshForm, false);
-			}
-
 			return;
 		}
 
@@ -855,17 +841,49 @@
 		}
 	}
 
+	function handleDatePresetClick(event) {
+		const target = event.target;
+
+		if (!(target instanceof Element)) {
+			return;
+		}
+
+		const trigger = target.closest("[data-ttp-date-preset]");
+
+		if (!(trigger instanceof HTMLButtonElement)) {
+			return;
+		}
+
+		const container = trigger.closest("[data-ttp-date-presets]");
+		const inputId = container?.getAttribute("data-ttp-date-presets") || "";
+		const input = inputId ? document.getElementById(inputId) : null;
+
+		if (!(input instanceof HTMLInputElement)) {
+			return;
+		}
+
+		input.value = trigger.getAttribute("data-ttp-date-preset") || "";
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		input.dispatchEvent(new Event("change", { bubbles: true }));
+		input.focus();
+	}
+
 	ready(() => {
 		document.querySelectorAll('.ttp-tabs[role="tablist"]').forEach(initTablist);
 		initListFieldsIn(document);
 		initPpomPaginationIn(document);
-		initWcGenerateFormsIn(document);
+		initProgressiveFormsIn(document);
+		initRockerFormsIn(document);
 		initToastsIn(document);
+		document.addEventListener("click", handleDatePresetClick);
 
 		document.addEventListener("datastar-fetch", (event) => {
 			handleDatastarFetch(event);
 
-			if (!(event instanceof CustomEvent) || event.detail?.type !== "finished") {
+			if (
+				!(event instanceof CustomEvent) ||
+				event.detail?.type !== "finished"
+			) {
 				return;
 			}
 
@@ -873,8 +891,13 @@
 			if (target instanceof Element) {
 				initListFieldsIn(target);
 				initPpomPaginationIn(target);
-				initWcGenerateFormsIn(target);
+				initProgressiveFormsIn(target);
 			}
+
+			// Card morphs replace the whole .ttp-card subtree, so re-init the
+			// rocker forms globally — the event target may have been removed
+			// from the DOM by Datastar.
+			initRockerFormsIn(document);
 
 			initToastsIn(document.getElementById("ttp-flash") || document);
 		});

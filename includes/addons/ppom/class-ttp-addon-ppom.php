@@ -50,32 +50,36 @@ class TTP_Addon_PPOM implements TTP_Addon {
 
 		$registry->register(
 			array(
-				'id'          => 'ppom_inspect_field_groups',
-				'type'        => 'utility',
-				'categories'  => array( $ppom_tab ),
-				'group'       => $field_groups,
-				'product'     => $ppom_product,
-				'label'       => __( 'Inspect field groups', 'themeisle-tester' ),
-				'description' => __( 'Lists every PPOM field group row from the database with decoded field definitions and raw the_meta JSON.', 'themeisle-tester' ),
-				'width'       => 'full',
-				'requires'    => TTP_Integration_Checks::require_ppom(),
-				'inspect'     => array( $this, 'inspect_field_groups' ),
+				'id'              => 'ppom_inspect_field_groups',
+				'type'            => 'utility',
+				'categories'      => array( $ppom_tab ),
+				'group'           => $field_groups,
+				'product'         => $ppom_product,
+				'label'           => __( 'Inspect field groups', 'themeisle-tester' ),
+				'description'     => __( 'Lists every PPOM field group row from the database with decoded field definitions and raw the_meta JSON.', 'themeisle-tester' ),
+				'width'           => 'full',
+				'requires'        => TTP_Integration_Checks::require_ppom(),
+				'inspect'         => array( $this, 'inspect_field_groups' ),
+				'render_inspect'  => array( $this, 'render_inspect_field_groups' ),
+				'inspect_on_load' => false,
+				'inspect_refresh' => true,
 			)
 		);
 
 		$registry->register(
 			array(
-				'id'          => 'ppom_generate_free_fields_test_group',
-				'type'        => 'utility',
-				'categories'  => array( $ppom_tab ),
-				'group'       => $test_fixtures,
-				'product'     => $ppom_product,
-				'label'       => __( 'Generate free-fields test product', 'themeisle-tester' ),
-				'description' => __( 'Creates a WooCommerce product attached to a freshly generated PPOM field group containing every free PPOM field type, then surfaces a clickable link to the product page.', 'themeisle-tester' ),
-				'width'       => 'wide',
-				'requires'    => TTP_Integration_Checks::require_ppom(),
-				'inspect'     => array( $this, 'inspect_last_generated_target' ),
-				'run'         => array( $this, 'run_generate_free_fields_test_group' ),
+				'id'             => 'ppom_generate_free_fields_test_group',
+				'type'           => 'utility',
+				'categories'     => array( $ppom_tab ),
+				'group'          => $test_fixtures,
+				'product'        => $ppom_product,
+				'label'          => __( 'Generate free-fields test product', 'themeisle-tester' ),
+				'description'    => __( 'Creates a WooCommerce product attached to a freshly generated PPOM field group containing every free PPOM field type, then surfaces a clickable link to the product page.', 'themeisle-tester' ),
+				'width'          => 'wide',
+				'requires'       => TTP_Integration_Checks::require_ppom(),
+				'inspect'        => array( $this, 'inspect_last_generated_target' ),
+				'render_inspect' => array( $this, 'render_inspect_last_generated_target' ),
+				'run'            => array( $this, 'run_generate_free_fields_test_group' ),
 			)
 		);
 
@@ -376,5 +380,31 @@ class TTP_Addon_PPOM implements TTP_Addon {
 	 */
 	private function row_string( array $vars, $key ) {
 		return isset( $vars[ $key ] ) && is_string( $vars[ $key ] ) ? $vars[ $key ] : '';
+	}
+
+	/**
+	 * Render PPOM field-group inspect output.
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_inspect_field_groups( $item, $inspect_result, TTP_Admin_Page $page ) {
+		unset( $item );
+		$page->render_ppom_field_groups( $inspect_result );
+	}
+
+	/**
+	 * Render the last-generated PPOM fixture target panel.
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_inspect_last_generated_target( $item, $inspect_result, TTP_Admin_Page $page ) {
+		unset( $item );
+		$page->render_ppom_last_target( $inspect_result );
 	}
 }

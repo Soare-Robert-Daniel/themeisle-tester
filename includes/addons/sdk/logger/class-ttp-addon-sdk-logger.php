@@ -21,14 +21,14 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 	 * @return void
 	 */
 	public function register( TTP_Item_Registry $registry ) {
-		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
-		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
+		$sdk_category = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk   = __( 'Shared SDK', 'themeisle-tester' );
 
 		$registry->register(
 			array(
 				'id'                 => 'sdk_inspect_logger',
 				'type'               => 'utility',
-				'categories'         => array( $install_licensing ),
+				'categories'         => array( $sdk_category ),
 				'product'            => $shared_sdk,
 				'label'              => __( 'Logger inspector', 'themeisle-tester' ),
 				'description'        => __( 'Shows each SDK product\'s logger consent flag, scheduled log payload, and how data is collected (PHP cron + optional JS telemetry).', 'themeisle-tester' ),
@@ -36,16 +36,29 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 				'is_available'       => array( $this, 'is_sdk_available' ),
 				'unavailable_reason' => array( $this, 'sdk_unavailable_reason' ),
 				'inspect'            => array( $this, 'inspect_logger' ),
+				'render_inspect'     => array( $this, 'render_logger_inspect_panel' ),
+				'inspect_on_load'    => false,
+				'inspect_refresh'    => true,
 				'run'                => array( $this, 'run_send_log' ),
-				'fields'             => array(
-					array(
-						'id'    => 'product_key',
-						'type'  => 'text',
-						'label' => __( 'Product key', 'themeisle-tester' ),
-					),
-				),
+				'render_run'         => array( $this, 'render_no_card_run' ),
 			)
 		);
+	}
+
+	/**
+	 * Suppress the top-level Run section on the card body.
+	 *
+	 * The logger's run callback is invoked exclusively by the per-product
+	 * "Send log now" buttons and the "Send all active logs" button rendered
+	 * inside the inspect panel (see TTP_Logger_Inspect_Renderer). The card
+	 * itself does not need its own form.
+	 *
+	 * @param array<string,mixed> $item Item definition (unused).
+	 * @param TTP_Admin_Page      $page Admin page (unused).
+	 * @return void
+	 */
+	public function render_no_card_run( $item, TTP_Admin_Page $page ) {
+		unset( $item, $page );
 	}
 
 	/**
@@ -170,7 +183,7 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 		$rows = array();
 
 		foreach ( $products as $slug => $product ) {
-			if ( ! is_object( $product ) || ! method_exists( $product, 'get_key' ) ) {
+			if ( ! method_exists( $product, 'get_key' ) ) {
 				continue;
 			}
 
@@ -241,17 +254,18 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 	 * @return array<string,mixed>
 	 */
 	private function format_product_row( $product, $slug, array $all_products ) {
-		$key         = $this->product_method_string( $product, 'get_key' );
-		$flag_key    = $key . '_logger_flag';
-		$default     = $this->get_default_logger_flag( $product, $all_products );
-		$stored_raw  = get_option( $flag_key, false );
-		$effective   = ( false === $stored_raw ) ? $default : ( is_scalar( $stored_raw ) ? (string) $stored_raw : $default );
-		$module_on   = (bool) apply_filters( $this->product_method_string( $product, 'get_slug' ) . '_sdk_enable_logger', true );
-		$global_off  = (bool) apply_filters( 'themeisle_sdk_disable_telemetry', false );
-		$is_active   = $module_on && ! $global_off && 'yes' === $effective;
-		$cron_hook   = $key . '_log_activity';
-		$cron_next   = wp_next_scheduled( $cron_hook );
-		$logger_data = apply_filters( $key . '_logger_data', array() );
+		$key                = $this->product_method_string( $product, 'get_key' );
+		$flag_key           = $key . '_logger_flag';
+		$default            = $this->get_default_logger_flag( $product, $all_products );
+		$stored_raw         = get_option( $flag_key, false );
+		$effective          = ( false === $stored_raw ) ? $default : ( is_scalar( $stored_raw ) ? (string) $stored_raw : $default );
+		$module_on          = (bool) apply_filters( $this->product_method_string( $product, 'get_slug' ) . '_sdk_enable_logger', true );
+		$global_off         = (bool) apply_filters( 'themeisle_sdk_disable_telemetry', false );
+		$is_active          = $module_on && ! $global_off && 'yes' === $effective;
+		$cron_hook          = $key . '_log_activity';
+		$cron_next          = wp_next_scheduled( $cron_hook );
+		$logger_data_filter = $key . '_logger_data';
+		$logger_data        = apply_filters( $logger_data_filter, array() );
 
 		$row = array(
 			'slug'                  => $slug,
@@ -272,7 +286,7 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 			'cron_next_utc'         => false !== $cron_next ? gmdate( 'Y-m-d H:i:s', $cron_next ) : '',
 			'license_in_payload'    => (string) apply_filters( $key . '_license_status', '' ),
 			'logger_data'           => is_array( $logger_data ) ? $logger_data : array(),
-			'logger_data_filter'    => $key . '_logger_data',
+			'logger_data_filter'    => $logger_data_filter,
 			'collection'            => $this->describe_collection( $product, $is_active ),
 		);
 
@@ -426,7 +440,7 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 		$failed   = 0;
 
 		foreach ( $products as $product ) {
-			if ( ! is_object( $product ) || ! method_exists( $product, 'get_key' ) ) {
+			if ( ! method_exists( $product, 'get_key' ) ) {
 				continue;
 			}
 
@@ -482,7 +496,7 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 	 */
 	private function find_product_by_key( $product_key ) {
 		foreach ( \ThemeisleSDK\Loader::get_products() as $product ) {
-			if ( ! is_object( $product ) || ! method_exists( $product, 'get_key' ) ) {
+			if ( ! method_exists( $product, 'get_key' ) ) {
 				continue;
 			}
 
@@ -626,13 +640,13 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 			return $fallback;
 		}
 
-		$callable = array( $product, $method );
+		$handler = array( $product, $method );
 
-		if ( ! is_callable( $callable ) ) {
+		if ( ! is_callable( $handler ) ) {
 			return $fallback;
 		}
 
-		$value = $callable();
+		$value = $handler();
 
 		return is_scalar( $value ) ? (string) $value : $fallback;
 	}
@@ -649,12 +663,25 @@ class TTP_Addon_SDK_Logger implements TTP_Addon {
 			return false;
 		}
 
-		$callable = array( $product, $method );
+		$handler = array( $product, $method );
 
-		if ( ! is_callable( $callable ) ) {
+		if ( ! is_callable( $handler ) ) {
 			return false;
 		}
 
-		return (bool) $callable();
+		return (bool) $handler();
+	}
+
+	/**
+	 * Render SDK logger inspect output.
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_logger_inspect_panel( $item, $inspect_result, TTP_Admin_Page $page ) {
+		unset( $item );
+		$page->render_logger_inspect( $inspect_result );
 	}
 }

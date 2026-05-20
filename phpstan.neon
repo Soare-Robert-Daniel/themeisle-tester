@@ -7,5 +7,7 @@ parameters:
 		- tests/phpstan/constants.php
 		- tests/phpstan/woocommerce-stubs.php
 		- tests/phpstan/ppom-stubs.php
+		- tests/phpstan/themeisle-sdk-stubs.php
+		- tests/phpstan/optimole-stubs.php
 includes:
 	- vendor/szepeviktor/phpstan-wordpress/extension.neon

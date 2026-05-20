@@ -94,19 +94,63 @@ class TTP_Dashboard_Layout_Renderer {
 
 		$show_headings = count( $groups ) > 1 && ! array_key_exists( '', $groups );
 
+		echo '<div class="ttp-panel__grid">';
+
 		foreach ( $groups as $label => $group_items ) {
 			if ( $show_headings && '' !== $label ) {
-				echo '<h3 class="ttp-panel__group-title">' . esc_html( $label ) . '</h3>';
-			}
+				$count_total  = count( $group_items );
+				$count_active = $this->count_active_scenarios_in_list( $group_items );
 
-			echo '<div class="ttp-panel__grid">';
+				/* translators: %d: total number of testing items in a group. */
+				$count_label = sprintf( _n( '%d item', '%d items', $count_total, 'themeisle-tester' ), $count_total );
+
+				echo '<h3 class="ttp-panel__group-title">';
+				echo '<span class="ttp-panel__group-title-text">' . esc_html( $label ) . '</span>';
+				echo '<span class="ttp-panel__group-meta">';
+				echo '<span class="ttp-panel__group-count">' . esc_html( $count_label ) . '</span>';
+
+				if ( $count_active > 0 ) {
+					/* translators: %d: number of active scenarios in a group. */
+					$active_label = sprintf( _n( '%d active', '%d active', $count_active, 'themeisle-tester' ), $count_active );
+					echo '<span class="ttp-panel__group-active"><span class="ttp-panel__group-active-dot" aria-hidden="true"></span>' . esc_html( $active_label ) . '</span>';
+				}
+
+				echo '</span>';
+				echo '</h3>';
+			}
 
 			foreach ( $group_items as $item ) {
 				$this->view_loader->render( $page, 'card', array( 'item' => $item ) );
 			}
-
-			echo '</div>';
 		}
+
+		echo '</div>';
+	}
+
+	/**
+	 * Count enabled Scenarios in a flat list of normalised items.
+	 *
+	 * @phpstan-param array<int,NormalizedItem> $items
+	 *
+	 * @param array<int,array<string,mixed>> $items Items.
+	 * @return int
+	 */
+	private function count_active_scenarios_in_list( array $items ) {
+		$count = 0;
+
+		foreach ( $items as $item ) {
+			if ( 'scenario' !== $item['type'] || empty( $item['available'] ) ) {
+				continue;
+			}
+
+			$state = $this->scenario_store->get( $item['id'] );
+
+			if ( ! empty( $state['enabled'] ) ) {
+				++$count;
+			}
+		}
+
+		return $count;
 	}
 
 	/**

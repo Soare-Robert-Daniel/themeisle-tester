@@ -24,6 +24,8 @@ class TTP_Addon_Loader {
 		array( TTP_Addon_WordPress::class, 50 ),
 		array( TTP_Addon_PPOM::class, 60 ),
 		array( TTP_Addon_WooCommerce::class, 70 ),
+		array( TTP_Addon_Super_Page_Cache::class, 80 ),
+		array( TTP_Addon_Optimole::class, 90 ),
 	);
 
 	/**

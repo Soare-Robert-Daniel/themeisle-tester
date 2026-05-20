@@ -82,10 +82,60 @@ class TTP_Field_Renderer {
 				}
 
 				echo '<input id="' . esc_attr( $control_id ) . '" type="' . esc_attr( $input_type ) . '" name="ttp_params[' . esc_attr( $id ) . ']" value="' . esc_attr( $value ) . '">';
+
+				if ( isset( $field['presets'] ) && is_array( $field['presets'] ) ) {
+					$this->render_field_presets( $control_id, $field['presets'] );
+				}
 			}
 
 			echo '</div>';
 		}
+	}
+
+	/**
+	 * Render preset buttons that fill a sibling input client-side.
+	 *
+	 * Each preset row needs a string `value` and a string `label`. Anything
+	 * else is silently dropped so the renderer never trusts unsanitized data.
+	 *
+	 * @param string                  $target_id Input element ID to populate.
+	 * @param array<int|string,mixed> $presets   Preset rows.
+	 * @return void
+	 */
+	private function render_field_presets( $target_id, $presets ) {
+		$rows = array();
+
+		foreach ( $presets as $preset ) {
+			if ( ! is_array( $preset ) ) {
+				continue;
+			}
+
+			$preset_value = isset( $preset['value'] ) && is_scalar( $preset['value'] ) ? (string) $preset['value'] : '';
+			$preset_label = isset( $preset['label'] ) && is_scalar( $preset['label'] ) ? (string) $preset['label'] : '';
+
+			if ( '' === $preset_value || '' === $preset_label ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'value' => $preset_value,
+				'label' => $preset_label,
+			);
+		}
+
+		if ( empty( $rows ) ) {
+			return;
+		}
+
+		echo '<div class="ttp-card__field-presets" data-ttp-date-presets="' . esc_attr( $target_id ) . '">';
+
+		foreach ( $rows as $row ) {
+			echo '<button type="button" class="button button-small ttp-card__field-preset" data-ttp-date-preset="' . esc_attr( $row['value'] ) . '">';
+			echo esc_html( $row['label'] );
+			echo '</button>';
+		}
+
+		echo '</div>';
 	}
 
 	/**

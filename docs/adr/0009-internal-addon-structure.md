@@ -32,7 +32,7 @@ When an addon outgrows one file, split by feature area. **SDK** is the reference
 |------|------|----------------|
 | Orchestrator | `class-ttp-addon-sdk.php` | `register_hooks()` wires feature modules to `ttp_register_items` at priorities 10–40 |
 | Black Friday | `class-ttp-sdk-black-friday.php` | `sdk_current_date`, `sdk_blackfriday_domain`, `clear_black_friday_dismissal`, `black_friday_dates` |
-| Surveys | `class-ttp-sdk-surveys.php` | `survey_data_override`, `survey_data_inspect` |
+| Surveys | `class-ttp-sdk-surveys.php` | `survey_data_override` |
 | Licensing | `class-ttp-sdk-licensing.php` | `license_data_editor`, `install_timestamp_editor` |
 
 Feature classes are plain PHP helpers (not `TTP_Addon` implementations): they own item array definitions and callbacks for their area. The orchestrator stays thin. Do not add a shared addon base class until a second large addon needs the same pattern.

@@ -95,6 +95,36 @@ class TTP_Scenario_Store {
 	}
 
 	/**
+	 * Flip the enabled flag without touching saved params.
+	 *
+	 * Used by the rocker-switch endpoint so a configured Scenario can be
+	 * toggled on/off without resending its params.
+	 *
+	 * @param string $scenario_id Scenario ID.
+	 * @param bool   $enabled     New enabled flag.
+	 * @return void
+	 */
+	public function set_enabled( $scenario_id, $enabled ) {
+		$state  = $this->get_all_without_filters();
+		$params = array();
+
+		if ( isset( $state[ $scenario_id ] ) && is_array( $state[ $scenario_id ] ) ) {
+			$existing = $state[ $scenario_id ];
+
+			if ( isset( $existing['params'] ) && is_array( $existing['params'] ) ) {
+				$params = $existing['params'];
+			}
+		}
+
+		$state[ $scenario_id ] = array(
+			'enabled' => (bool) $enabled,
+			'params'  => $params,
+		);
+
+		$this->persist( $state );
+	}
+
+	/**
 	 * Reset one Scenario state row.
 	 *
 	 * @param string $scenario_id Scenario ID.

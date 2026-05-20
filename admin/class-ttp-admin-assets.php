@@ -69,18 +69,18 @@ class TTP_Admin_Assets {
 		wp_script_add_data( 'ttp-datastar', 'type', 'module' );
 
 		$dashboard_config = array(
-			'restUrl'    => rest_url( TTP_REST_Controller::NAMESPACE_NAME . '/' ),
-			'restNonce'  => wp_create_nonce( 'wp_rest' ),
-			'wcGenerate' => array(
-				/* translators: 1: current product number, 2: total products. */
-				'creating' => __( 'Creating product %1$d of %2$d…', 'themeisle-tester' ),
-				/* translators: 1: product number, 2: product detail line. */
-				'created'  => __( 'Created product %1$d — %2$s', 'themeisle-tester' ),
-				/* translators: 1: number of products created, 2: batch id. */
-				'complete' => __( 'Created %1$d products (batch %2$s).', 'themeisle-tester' ),
-				'failed'   => __( 'Product creation failed.', 'themeisle-tester' ),
+			'restUrl'     => rest_url( TTP_REST_Controller::NAMESPACE_NAME . '/' ),
+			'restNonce'   => wp_create_nonce( 'wp_rest' ),
+			'progressive' => array(
+				/* translators: 1: current step number, 2: total steps. */
+				'creating' => __( 'Step %1$d of %2$d…', 'themeisle-tester' ),
+				/* translators: 1: step number, 2: server-supplied detail line. */
+				'created'  => __( 'Step %1$d — %2$s', 'themeisle-tester' ),
+				/* translators: 1: number of completed steps, 2: batch id. */
+				'complete' => __( 'Completed %1$d steps (batch %2$s).', 'themeisle-tester' ),
+				'failed'   => __( 'Run failed.', 'themeisle-tester' ),
 				'config'   => __( 'Dashboard configuration is missing. Reload the page and try again.', 'themeisle-tester' ),
-				'timeout'  => __( 'The request timed out. Try fewer products or a simpler product type.', 'themeisle-tester' ),
+				'timeout'  => __( 'The request timed out. Try a smaller batch.', 'themeisle-tester' ),
 			),
 		);
 

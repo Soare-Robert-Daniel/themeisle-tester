@@ -21,24 +21,52 @@ class TTP_SDK_Black_Friday {
 	 * @return void
 	 */
 	public function register( TTP_Item_Registry $registry ) {
-		$promos_surveys = __( 'Black Friday & Surveys', 'themeisle-tester' );
-		$shared_sdk     = __( 'Shared SDK', 'themeisle-tester' );
-		$group_bf       = __( 'Black Friday', 'themeisle-tester' );
+		$sdk_category = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk   = __( 'Shared SDK', 'themeisle-tester' );
+		$group_bf     = __( 'Black Friday', 'themeisle-tester' );
+
+		$bf_dates = $this->compute_black_friday_dates();
 
 		$registry->register(
 			array(
 				'id'          => 'sdk_current_date',
 				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
+				'categories'  => array( $sdk_category ),
 				'group'       => $group_bf,
 				'product'     => $shared_sdk,
 				'label'       => __( 'Override SDK current date', 'themeisle-tester' ),
 				'description' => __( 'Overrides the date returned by themeisle_sdk_current_date — useful to fast-forward into the sale window.', 'themeisle-tester' ),
 				'fields'      => array(
 					array(
-						'id'    => 'date',
-						'type'  => 'date',
-						'label' => __( 'Override date', 'themeisle-tester' ),
+						'id'      => 'date',
+						'type'    => 'date',
+						'label'   => __( 'Override date', 'themeisle-tester' ),
+						'presets' => array(
+							array(
+								'label' => sprintf(
+									/* translators: %s: year (e.g. 2026). */
+									__( 'Sale start (%s)', 'themeisle-tester' ),
+									$bf_dates['year']
+								),
+								'value' => $bf_dates['sale_start'],
+							),
+							array(
+								'label' => sprintf(
+									/* translators: %s: year (e.g. 2026). */
+									__( 'Black Friday (%s)', 'themeisle-tester' ),
+									$bf_dates['year']
+								),
+								'value' => $bf_dates['black_friday'],
+							),
+							array(
+								'label' => sprintf(
+									/* translators: %s: year (e.g. 2026). */
+									__( 'Sale end (%s)', 'themeisle-tester' ),
+									$bf_dates['year']
+								),
+								'value' => $bf_dates['sale_end'],
+							),
+						),
 					),
 				),
 				'apply'       => array( $this, 'apply_current_date' ),
@@ -49,7 +77,7 @@ class TTP_SDK_Black_Friday {
 			array(
 				'id'          => 'sdk_blackfriday_domain',
 				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
+				'categories'  => array( $sdk_category ),
 				'group'       => $group_bf,
 				'product'     => $shared_sdk,
 				'label'       => __( 'Swap Black Friday sale URL domains', 'themeisle-tester' ),
@@ -69,7 +97,7 @@ class TTP_SDK_Black_Friday {
 			array(
 				'id'          => 'clear_black_friday_dismissal',
 				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
+				'categories'  => array( $sdk_category ),
 				'group'       => $group_bf,
 				'product'     => $shared_sdk,
 				'label'       => __( 'Clear Black Friday dismissed notice', 'themeisle-tester' ),
@@ -82,7 +110,7 @@ class TTP_SDK_Black_Friday {
 			array(
 				'id'          => 'black_friday_dates',
 				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
+				'categories'  => array( $sdk_category ),
 				'group'       => $group_bf,
 				'product'     => $shared_sdk,
 				'label'       => __( 'Black Friday quick dates', 'themeisle-tester' ),
@@ -180,9 +208,22 @@ class TTP_SDK_Black_Friday {
 	/**
 	 * Inspect Black Friday quick dates.
 	 *
-	 * @return array<string,mixed>
+	 * @return array{year:string,sale_start:string,black_friday:string,sale_end:string}
 	 */
 	public function inspect_black_friday_dates() {
+		return $this->compute_black_friday_dates();
+	}
+
+	/**
+	 * Compute the sale window dates that the SDK Black Friday module uses.
+	 *
+	 * Mirrors the math in ThemeisleSDK\Modules\Black_Friday: Black Friday is
+	 * the last Friday of November, sale_start is the Monday of that week,
+	 * sale_end is seven days later.
+	 *
+	 * @return array{year:string,sale_start:string,black_friday:string,sale_end:string}
+	 */
+	private function compute_black_friday_dates() {
 		$now          = new DateTime( 'now' );
 		$current_year = $now->format( 'Y' );
 		$black_friday = new DateTime( 'last Friday of November ' . $current_year );

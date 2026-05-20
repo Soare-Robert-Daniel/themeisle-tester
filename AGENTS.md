@@ -73,6 +73,14 @@ add_action( 'ttp_register_items', function ( $registry ) {
 
 **`requires`** — declare external classes, functions, and capabilities before callbacks run. Keys: `classes`, `functions`, `capabilities` (each a map of symbol => unavailable message). The registry checks them at finalize/render time; REST, form POST, and Dashboard actions also block when unmet. Reuse presets from `TTP_Integration_Checks::require_*()` for WooCommerce/PPOM addons.
 
+**Presentation (optional)** — keep Dashboard markup out of shared views:
+
+- `render_inspect` — `callable( $item, $inspect_result, TTP_Admin_Page $page ): void` for custom inspect layout.
+- `render_run` — `callable( $item, TTP_Admin_Page $page ): void` when the default run chrome is not enough.
+- `inspect_on_load` — `bool`, default `true`. Set `false` for heavy inspect utilities; the card shows a **Load** button that POSTs to `ttp/v1/.../inspect` and morphs `#ttp-card-inspect-{id}`.
+- `inspect_refresh` — `bool`, default `false`. Set `true` when the inspect surface shows live state that drifts (option values, log entries, cached files, license/install timestamps). The card renders a **Refresh** button above the inspect body. Leave off for static or selection-only inspect panels — `install_plugin_from_zip` is the canonical "don't opt in" example.
+- `run_ui` — `array( 'transport' => 'datastar' | 'progressive' | 'zip_batch' )` for platform run forms when `render_run` is omitted.
+
 Per-item filters (no class needed):
 
 - `apply_filters( "ttp_item_definition_{$id}", $item )` — adjust a single normalized item.
@@ -127,7 +135,7 @@ includes/
     sdk/
       class-ttp-addon-sdk.php           SDK hook priorities (BF 10, license 20, surveys 30, install 40)
       class-ttp-sdk-black-friday.php    BF scenarios + utilities
-      class-ttp-sdk-surveys.php         survey scenarios + utilities
+      class-ttp-sdk-surveys.php         survey override scenario
       class-ttp-sdk-licensing.php       license/install Danger Utilities
     wordpress/
       class-ttp-addon-wordpress.php     WordPress admin utilities (install from ZIP)

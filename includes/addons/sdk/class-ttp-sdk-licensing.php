@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers license and install Danger Utilities.
+ *
+ * @phpstan-import-type NormalizedItem from TTP_Item_Registry
  */
 class TTP_SDK_Licensing {
 
@@ -32,18 +34,18 @@ class TTP_SDK_Licensing {
 	 * @return void
 	 */
 	public function register_license_item( TTP_Item_Registry $registry ) {
-		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
-		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
+		$sdk_category = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk   = __( 'Shared SDK', 'themeisle-tester' );
 
 		$registry->register(
 			array(
-				'id'          => 'license_data_editor',
-				'type'        => 'danger_utility',
-				'categories'  => array( $install_licensing ),
-				'product'     => $shared_sdk,
-				'label'       => __( 'License data scanner/editor', 'themeisle-tester' ),
-				'description' => __( 'Scans and changes *_license_data option license statuses with backup support.', 'themeisle-tester' ),
-				'fields'      => array(
+				'id'              => 'license_data_editor',
+				'type'            => 'danger_utility',
+				'categories'      => array( $sdk_category ),
+				'product'         => $shared_sdk,
+				'label'           => __( 'License data scanner/editor', 'themeisle-tester' ),
+				'description'     => __( 'Scans and changes *_license_data option license statuses with backup support.', 'themeisle-tester' ),
+				'fields'          => array(
 					array(
 						'id'      => 'status',
 						'type'    => 'select',
@@ -51,9 +53,11 @@ class TTP_SDK_Licensing {
 						'options' => array( 'valid', 'expired', 'active-expired', 'invalid' ),
 					),
 				),
-				'inspect'     => array( $this, 'inspect_license_data' ),
-				'mutate'      => array( $this, 'mutate_license_data' ),
-				'restore'     => array( $this, 'restore_option_backup' ),
+				'inspect'         => array( $this, 'inspect_license_data' ),
+				'render_inspect'  => array( $this, 'render_license_inspect_panel' ),
+				'inspect_refresh' => true,
+				'mutate'          => array( $this, 'mutate_license_data' ),
+				'restore'         => array( $this, 'restore_option_backup' ),
 			)
 		);
 	}
@@ -65,19 +69,18 @@ class TTP_SDK_Licensing {
 	 * @return void
 	 */
 	public function register_force_license_refresh( TTP_Item_Registry $registry ) {
-		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
-		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
+		$sdk_category = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk   = __( 'Shared SDK', 'themeisle-tester' );
 
 		$registry->register(
 			array(
-				'id'               => 'force_license_refresh',
-				'type'             => 'utility',
-				'categories'       => array( $install_licensing ),
-				'product'          => $shared_sdk,
-				'label'            => __( 'Force license refresh', 'themeisle-tester' ),
-				'description'      => __( 'Re-fetches license state from the licensing API and clears the local cache.', 'themeisle-tester' ),
-				'dashboard_hidden' => true,
-				'run'              => array( $this, 'run_force_license_refresh' ),
+				'id'          => 'force_license_refresh',
+				'type'        => 'utility',
+				'categories'  => array( $sdk_category ),
+				'product'     => $shared_sdk,
+				'label'       => __( 'Force license refresh', 'themeisle-tester' ),
+				'description' => __( 'Clears ti_license_cache and POSTs to /wp-json/ti/v1/license/refresh.', 'themeisle-tester' ),
+				'run'         => array( $this, 'run_force_license_refresh' ),
 			)
 		);
 	}
@@ -169,27 +172,29 @@ class TTP_SDK_Licensing {
 	 * @return void
 	 */
 	public function register_install_item( TTP_Item_Registry $registry ) {
-		$install_licensing = __( 'Install & Licensing', 'themeisle-tester' );
-		$shared_sdk        = __( 'Shared SDK', 'themeisle-tester' );
+		$sdk_category = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk   = __( 'Shared SDK', 'themeisle-tester' );
 
 		$registry->register(
 			array(
-				'id'          => 'install_timestamp_editor',
-				'type'        => 'danger_utility',
-				'categories'  => array( $install_licensing ),
-				'product'     => $shared_sdk,
-				'label'       => __( 'Install timestamp scanner/editor', 'themeisle-tester' ),
-				'description' => __( 'Scans and changes *_install timestamp options. Includes force license refresh (clears ti_license_cache and calls the licensing API).', 'themeisle-tester' ),
-				'fields'      => array(
+				'id'              => 'install_timestamp_editor',
+				'type'            => 'danger_utility',
+				'categories'      => array( $sdk_category ),
+				'product'         => $shared_sdk,
+				'label'           => __( 'Install timestamp scanner/editor', 'themeisle-tester' ),
+				'description'     => __( 'Scans and changes *_install timestamp options.', 'themeisle-tester' ),
+				'fields'          => array(
 					array(
 						'id'    => 'date',
 						'type'  => 'date',
 						'label' => __( 'Install date', 'themeisle-tester' ),
 					),
 				),
-				'inspect'     => array( $this, 'inspect_install_timestamps' ),
-				'mutate'      => array( $this, 'mutate_install_timestamp' ),
-				'restore'     => array( $this, 'restore_option_backup' ),
+				'inspect'         => array( $this, 'inspect_install_timestamps' ),
+				'render_inspect'  => array( $this, 'render_install_inspect_panel' ),
+				'inspect_refresh' => true,
+				'mutate'          => array( $this, 'mutate_install_timestamp' ),
+				'restore'         => array( $this, 'restore_option_backup' ),
 			)
 		);
 	}
@@ -561,5 +566,47 @@ class TTP_SDK_Licensing {
 			_n( '%s day', '%s days', $days, 'themeisle-tester' ),
 			number_format_i18n( $days )
 		);
+	}
+
+	/**
+	 * Render license data editor inspect tables.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_license_inspect_panel( $item, $inspect_result, TTP_Admin_Page $page ) {
+		if ( ! is_array( $inspect_result ) || ! isset( $inspect_result['rows'] ) || ! is_array( $inspect_result['rows'] ) ) {
+			$page->render_result_table( $inspect_result );
+			return;
+		}
+
+		$page->render_license_rows( $item, $inspect_result['rows'] );
+	}
+
+	/**
+	 * Render install timestamp editor inspect tables.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item           Item definition.
+	 * @param mixed               $inspect_result Inspect callback result.
+	 * @param TTP_Admin_Page      $page           Admin page.
+	 * @return void
+	 */
+	public function render_install_inspect_panel( $item, $inspect_result, TTP_Admin_Page $page ) {
+		if ( ! is_array( $inspect_result ) || ! isset( $inspect_result['rows'] ) || ! is_array( $inspect_result['rows'] ) ) {
+			$page->render_result_table( $inspect_result );
+			return;
+		}
+
+		if ( isset( $inspect_result['reference_date'] ) && is_string( $inspect_result['reference_date'] ) ) {
+			echo '<p class="ttp-card__reference"><strong>' . esc_html__( 'Reference date:', 'themeisle-tester' ) . '</strong> ' . esc_html( $inspect_result['reference_date'] ) . '</p>';
+		}
+
+		$page->render_install_rows( $item, $inspect_result['rows'] );
 	}
 }

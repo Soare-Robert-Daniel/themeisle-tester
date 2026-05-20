@@ -85,6 +85,12 @@ class TTP_Admin_Form_Handler {
 			return;
 		}
 
+		if ( 'toggle_scenario' === $action ) {
+			$enabled             = ! empty( $_POST['ttp_enabled'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+			$this->action_result = $this->dashboard_actions->set_scenario_enabled( $item, $enabled );
+			return;
+		}
+
 		if ( 'reset_scenario' === $action ) {
 			$this->action_result = $this->dashboard_actions->reset_scenario( $item );
 			return;

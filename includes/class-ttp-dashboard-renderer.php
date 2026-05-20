@@ -68,6 +68,41 @@ class TTP_Dashboard_Renderer {
 	 * @param mixed               $result Action result or error.
 	 * @return string HTML body.
 	 */
+	public function render_inspect_response( $item, $result ) {
+		$parts   = array();
+		$parts[] = $this->render_flash_fragment( $result );
+
+		if ( ! is_wp_error( $result ) ) {
+			$parts[] = $this->render_inspect_fragment( $item, $result );
+		}
+
+		return implode( '', $parts );
+	}
+
+	/**
+	 * Render one inspect region fragment for Datastar morphing.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item   Item.
+	 * @param mixed               $result Inspect result.
+	 * @return string
+	 */
+	public function render_inspect_fragment( $item, $result ) {
+		ob_start();
+		$this->admin_page->get_card_presenter()->render_inspect_region( $item, $result );
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Build a full morph response for a card action.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param array<string,mixed> $item   Item acted on.
+	 * @param mixed               $result Action result or error.
+	 * @return string HTML body.
+	 */
 	public function render_action_response( $item, $result ) {
 		$parts   = array();
 		$parts[] = $this->render_flash_fragment( $result );

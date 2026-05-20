@@ -29,7 +29,8 @@ class TTP_Scenario_Summary_Renderer {
 	 * @return void
 	 */
 	public function render_saved_summary( $item, $params ) {
-		if ( empty( $item['fields'] ) || empty( $params ) ) {
+		if ( empty( $item['fields'] ) ) {
+			echo '<p class="ttp-readout ttp-readout--empty">' . esc_html__( 'No parameters.', 'themeisle-tester' ) . '</p>';
 			return;
 		}
 
@@ -40,36 +41,39 @@ class TTP_Scenario_Summary_Renderer {
 				continue;
 			}
 
-			$id = sanitize_key( $field['id'] );
-
-			if ( ! array_key_exists( $id, $params ) ) {
-				continue;
-			}
-
+			$id      = sanitize_key( $field['id'] );
 			$label   = isset( $field['label'] ) && is_string( $field['label'] ) ? $field['label'] : $id;
 			$type    = isset( $field['type'] ) && is_string( $field['type'] ) ? sanitize_key( $field['type'] ) : 'text';
-			$display = $this->format_saved_value( $type, $params[ $id ] );
-
-			if ( '' === $display ) {
-				continue;
-			}
+			$display = array_key_exists( $id, $params )
+				? $this->format_saved_value( $type, $params[ $id ] )
+				: '';
 
 			$pairs[] = array(
+				'key'   => $id,
 				'label' => $label,
 				'value' => $display,
 			);
 		}
 
 		if ( empty( $pairs ) ) {
+			echo '<p class="ttp-readout ttp-readout--empty">' . esc_html__( 'Not configured.', 'themeisle-tester' ) . '</p>';
 			return;
 		}
 
-		echo '<p class="ttp-card__saved">';
-		echo '<span class="ttp-card__saved-label">' . esc_html__( 'Saved', 'themeisle-tester' ) . '</span>';
+		echo '<dl class="ttp-readout">';
 		foreach ( $pairs as $pair ) {
-			echo '<span class="ttp-card__saved-pair"><strong>' . esc_html( $pair['label'] ) . '</strong>: ' . esc_html( $pair['value'] ) . '</span>';
+			echo '<div class="ttp-readout__row">';
+			echo '<dt class="ttp-readout__key">' . esc_html( $pair['label'] ) . '</dt>';
+
+			if ( '' === $pair['value'] ) {
+				echo '<dd class="ttp-readout__value ttp-readout__value--empty">' . esc_html__( '(unset)', 'themeisle-tester' ) . '</dd>';
+			} else {
+				echo '<dd class="ttp-readout__value">' . esc_html( $pair['value'] ) . '</dd>';
+			}
+
+			echo '</div>';
 		}
-		echo '</p>';
+		echo '</dl>';
 	}
 
 	/**

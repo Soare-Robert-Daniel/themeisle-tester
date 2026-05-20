@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers survey Scenarios and Utilities.
+ * Registers the Formbricks survey override Scenario.
  */
 class TTP_SDK_Surveys {
 
@@ -21,15 +21,15 @@ class TTP_SDK_Surveys {
 	 * @return void
 	 */
 	public function register( TTP_Item_Registry $registry ) {
-		$promos_surveys = __( 'Black Friday & Surveys', 'themeisle-tester' );
-		$shared_sdk     = __( 'Shared SDK', 'themeisle-tester' );
-		$group_surveys  = __( 'Surveys', 'themeisle-tester' );
+		$sdk_category  = __( 'SDK', 'themeisle-tester' );
+		$shared_sdk    = __( 'Shared SDK', 'themeisle-tester' );
+		$group_surveys = __( 'Surveys', 'themeisle-tester' );
 
 		$registry->register(
 			array(
 				'id'          => 'survey_data_override',
 				'type'        => 'scenario',
-				'categories'  => array( $promos_surveys ),
+				'categories'  => array( $sdk_category ),
 				'group'       => $group_surveys,
 				'product'     => $shared_sdk,
 				'label'       => __( 'Override Formbricks survey data', 'themeisle-tester' ),
@@ -69,20 +69,6 @@ class TTP_SDK_Surveys {
 					),
 				),
 				'apply'       => array( $this, 'apply_survey_override' ),
-			)
-		);
-
-		$registry->register(
-			array(
-				'id'          => 'survey_data_inspect',
-				'type'        => 'utility',
-				'categories'  => array( $promos_surveys ),
-				'group'       => $group_surveys,
-				'product'     => $shared_sdk,
-				'label'       => __( 'Inspect survey data', 'themeisle-tester' ),
-				'description' => __( 'Runs themeisle-sdk/survey/{product_slug} for known Themeisle products and shows what Formbricks would receive.', 'themeisle-tester' ),
-				'width'       => 'full',
-				'inspect'     => array( $this, 'inspect_survey_data' ),
 			)
 		);
 	}
@@ -148,45 +134,5 @@ class TTP_SDK_Surveys {
 			9999,
 			2
 		);
-	}
-
-	/**
-	 * Inspect survey data for known Themeisle product slugs.
-	 *
-	 * Calls apply_filters( 'themeisle-sdk/survey/{slug}', [], '' ) for a curated
-	 * list of products and returns each result as a flat key/value pair.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function inspect_survey_data() {
-		$known_products = array(
-			'otter-blocks',
-			'neve',
-			'optimole-wp',
-			'rop',
-			'wp-hyve-lite',
-			'feedzy-rss-feeds',
-			'translatepress-multilingual',
-		);
-
-		$result = array(
-			'_note' => __( 'Blank entries mean the product is inactive or has no survey handler registered.', 'themeisle-tester' ),
-		);
-
-		foreach ( $known_products as $slug ) {
-			/** This filter is documented in themeisle-sdk-main/src/Modules/Script_loader.php. */
-			// phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- Targets the SDK-defined hook name.
-			$data = apply_filters( 'themeisle-sdk/survey/' . $slug, array(), '' );
-
-			if ( ! is_array( $data ) || empty( $data ) ) {
-				$result[ $slug ] = '—';
-				continue;
-			}
-
-			$encoded         = wp_json_encode( $data );
-			$result[ $slug ] = is_string( $encoded ) ? $encoded : '';
-		}
-
-		return $result;
 	}
 }

@@ -65,6 +65,37 @@ class TTP_Integration_Checks {
 	}
 
 	/**
+	 * External dependencies for Optimole image-CDN utilities.
+	 *
+	 * @phpstan-return IntegrationRequirements
+	 *
+	 * @return array<string,array<string,string>>
+	 */
+	public static function require_optimole() {
+		return array(
+			'classes' => array(
+				'Optml_Url_Replacer' => __( 'Optimole is not active on this site.', 'themeisle-tester' ),
+				'Optml_Settings'     => __( 'Optimole settings API is not available on this site.', 'themeisle-tester' ),
+			),
+		);
+	}
+
+	/**
+	 * External dependencies for Super Page Cache inspect utilities.
+	 *
+	 * @phpstan-return IntegrationRequirements
+	 *
+	 * @return array<string,array<string,string>>
+	 */
+	public static function require_super_page_cache() {
+		return array(
+			'classes' => array(
+				'SW_CLOUDFLARE_PAGECACHE' => __( 'Super Page Cache for Cloudflare is not active on this site.', 'themeisle-tester' ),
+			),
+		);
+	}
+
+	/**
 	 * External dependencies for PPOM inspect utilities.
 	 *
 	 * @phpstan-return IntegrationRequirements
@@ -183,7 +214,10 @@ class TTP_Integration_Checks {
 	private static function first_unmet_requirement( $requirements ) {
 		$fallback = __( 'Required dependency is not available.', 'themeisle-tester' );
 
-		foreach ( array( 'classes' => 'class_exists', 'functions' => 'function_exists' ) as $kind => $checker ) {
+		foreach ( array(
+			'classes'   => 'class_exists',
+			'functions' => 'function_exists',
+		) as $kind => $checker ) {
 			if ( ! isset( $requirements[ $kind ] ) || ! is_array( $requirements[ $kind ] ) ) {
 				continue;
 			}

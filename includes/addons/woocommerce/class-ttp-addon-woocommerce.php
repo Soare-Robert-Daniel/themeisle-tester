@@ -123,6 +123,9 @@ class TTP_Addon_WooCommerce implements TTP_Addon {
 					),
 				),
 				'requires'    => TTP_Integration_Checks::require_woocommerce_products(),
+				'run_ui'      => array(
+					'transport' => 'progressive',
+				),
 				'run'         => array( $this, 'run_generate_random_products' ),
 			)
 		);

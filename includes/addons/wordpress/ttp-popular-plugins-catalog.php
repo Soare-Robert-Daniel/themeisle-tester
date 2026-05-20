@@ -21,9 +21,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array{name:string,source:string,slug?:string,zip_url?:string}>
  */
 return array(
-	'woocommerce' => array(
+	'woocommerce'               => array(
 		'name'   => 'WooCommerce',
 		'source' => 'wordpress.org',
 		'slug'   => 'woocommerce',
+	),
+	'optimole-wp'               => array(
+		'name'   => 'Optimole',
+		'source' => 'wordpress.org',
+		'slug'   => 'optimole-wp',
+	),
+	'woocommerce-product-addon' => array(
+		'name'   => 'WooCommerce Product Add-Ons (PPOM)',
+		'source' => 'wordpress.org',
+		'slug'   => 'woocommerce-product-addon',
 	),
 );

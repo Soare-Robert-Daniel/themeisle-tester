@@ -208,6 +208,7 @@ class TTP_Logger_Inspect_Renderer {
 			esc_html( $data_filter )
 		);
 		echo '</summary>';
+
 		$encoded = wp_json_encode( $logger_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
 		echo '<pre class="ttp-code-block">';

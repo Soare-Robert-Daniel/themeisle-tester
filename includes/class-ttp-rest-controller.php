@@ -131,6 +131,16 @@ class TTP_REST_Controller {
 
 		register_rest_route(
 			self::NAMESPACE_NAME,
+			'/scenarios/(?P<id>[a-z0-9_-]+)/toggle',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'toggle_scenario' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE_NAME,
 			'/utilities/(?P<id>[a-z0-9_-]+)/inspect',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -199,6 +209,44 @@ class TTP_REST_Controller {
 		$id = $request['id'];
 
 		return is_string( $id ) ? $id : '';
+	}
+
+	/**
+	 * Return JSON or HTML for a card action.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param WP_REST_Request     $request Request.
+	 * @param array<string,mixed> $item    Item.
+	 * @param mixed               $result  Action result.
+	 * @param array<string,mixed> $json    JSON body on success.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	/**
+	 * Return JSON or HTML for an inspect action.
+	 *
+	 * @phpstan-param NormalizedItem $item
+	 *
+	 * @param WP_REST_Request     $request Request.
+	 * @param array<string,mixed> $item    Item.
+	 * @param mixed               $result  Inspect result.
+	 * @param array<string,mixed> $json    JSON body on success.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	private function respond_inspect( WP_REST_Request $request, $item, $result, array $json ) {
+		if ( is_wp_error( $result ) ) {
+			if ( $this->rest_html->wants_html( $request ) ) {
+				return $this->rest_html->html_response( $this->dashboard_renderer->render_inspect_response( $item, $result ) );
+			}
+
+			return $result;
+		}
+
+		if ( $this->rest_html->wants_html( $request ) ) {
+			return $this->rest_html->html_response( $this->dashboard_renderer->render_inspect_response( $item, $result ) );
+		}
+
+		return rest_ensure_response( $json );
 	}
 
 	/**
@@ -428,6 +476,39 @@ class TTP_REST_Controller {
 	}
 
 	/**
+	 * Flip a Scenario's enabled flag (instant rocker switch).
+	 *
+	 * Saved params are preserved by {@see TTP_Dashboard_Actions::set_scenario_enabled()}
+	 * so the operator can flip a configured Scenario without resending its form.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function toggle_scenario( WP_REST_Request $request ) {
+		$item = $this->get_item_for_type( $this->request_item_id( $request ), 'scenario' );
+
+		if ( is_wp_error( $item ) ) {
+			return $item;
+		}
+
+		$result = $this->dashboard_actions->set_scenario_enabled(
+			$item,
+			$this->parse_enabled_from_request( $request )
+		);
+
+		$item_id = $item['id'];
+
+		return $this->respond_action(
+			$request,
+			$item,
+			$result,
+			array(
+				'state' => $this->scenario_store->get( $item_id ),
+			)
+		);
+	}
+
+	/**
 	 * Reset Scenario state.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -466,13 +547,9 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		if ( ! is_callable( $item['inspect'] ) ) {
-			return new WP_Error( 'ttp_utility_not_inspectable', __( 'This Utility does not provide inspector data.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
+		$result = $this->dashboard_actions->inspect_item( $item, $this->get_payload( $request ) );
 
-		$result = call_user_func( $item['inspect'], $item, $this->get_payload( $request ) );
-
-		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
+		return $this->respond_inspect( $request, $item, $result, is_array( $result ) ? $result : array() );
 	}
 
 	/**
@@ -508,13 +585,9 @@ class TTP_REST_Controller {
 			return $item;
 		}
 
-		if ( ! is_callable( $item['inspect'] ) ) {
-			return new WP_Error( 'ttp_utility_not_inspectable', __( 'This Danger Utility does not provide inspector data.', 'themeisle-tester' ), array( 'status' => 400 ) );
-		}
+		$result = $this->dashboard_actions->inspect_item( $item, $this->get_payload( $request ) );
 
-		$result = call_user_func( $item['inspect'], $item, $this->get_payload( $request ) );
-
-		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
+		return $this->respond_inspect( $request, $item, $result, is_array( $result ) ? $result : array() );
 	}
 
 	/**

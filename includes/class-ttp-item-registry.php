@@ -32,7 +32,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     unavailable_reason: string,
  *     available: bool,
  *     dashboard_hidden: bool,
- *     requires: array<string,array<string,string>>
+ *     requires: array<string,array<string,string>>,
+ *     render_inspect: callable|null,
+ *     render_run: callable|null,
+ *     inspect_on_load: bool,
+ *     inspect_refresh: bool,
+ *     run_ui: array{transport:string}
  * }
  */
 class TTP_Item_Registry {
@@ -319,6 +324,33 @@ class TTP_Item_Registry {
 			'available'                   => true,
 			'dashboard_hidden'            => ! empty( $item['dashboard_hidden'] ),
 			'requires'                    => TTP_Integration_Checks::normalize_requires( $item['requires'] ?? null ),
+			'render_inspect'              => isset( $item['render_inspect'] ) && is_callable( $item['render_inspect'] ) ? $item['render_inspect'] : null,
+			'render_run'                  => isset( $item['render_run'] ) && is_callable( $item['render_run'] ) ? $item['render_run'] : null,
+			'inspect_on_load'             => array_key_exists( 'inspect_on_load', $item ) ? ! empty( $item['inspect_on_load'] ) : true,
+			'inspect_refresh'             => ! empty( $item['inspect_refresh'] ),
+			'run_ui'                      => $this->normalize_run_ui( $item ),
+		);
+	}
+
+	/**
+	 * Normalize run UI transport metadata.
+	 *
+	 * @param array<string,mixed> $item Raw item schema.
+	 * @return array{transport:string}
+	 */
+	private function normalize_run_ui( $item ) {
+		$transport = 'datastar';
+
+		if ( isset( $item['run_ui'] ) && is_array( $item['run_ui'] ) && isset( $item['run_ui']['transport'] ) && is_string( $item['run_ui']['transport'] ) ) {
+			$candidate = sanitize_key( $item['run_ui']['transport'] );
+
+			if ( in_array( $candidate, array( 'datastar', 'progressive', 'zip_batch' ), true ) ) {
+				$transport = $candidate;
+			}
+		}
+
+		return array(
+			'transport' => $transport,
 		);
 	}
 

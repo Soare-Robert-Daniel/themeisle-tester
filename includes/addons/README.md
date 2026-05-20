@@ -18,8 +18,9 @@ addons/
 1. Create `includes/addons/{name}/class-ttp-addon-{name}.php` implementing `TTP_Addon`.
 2. Register items in `register()` (call `$registry->register( array( ... ) )`).
 3. Declare external APIs with `requires` (classes, functions, capabilities) or reuse presets from `TTP_Integration_Checks::require_*()`. The registry verifies them before rendering or running callbacks.
-4. Add the file to `manifest.php`.
-5. Document the addon in `docs/adr/` if it introduces a new pattern.
+4. For custom inspect/run UI, set `render_inspect` / `render_run` callables, or `run_ui.transport` (`datastar`, `progressive`, `zip_batch`). Use `inspect_on_load: false` when inspect work should run only after the tester clicks **Load**.
+5. Add the file to `manifest.php`.
+6. Document the addon in `docs/adr/` if it introduces a new pattern.
 
 ## SDK hook priorities
 
