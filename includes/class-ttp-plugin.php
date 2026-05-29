@@ -86,9 +86,11 @@ class TTP_Plugin {
 	 * @return void
 	 */
 	public function init() {
+		add_action( 'init', array( $this, 'load_textdomain' ), 0 );
+		add_action( 'init', array( $this, 'register_items_and_apply_scenarios' ), 11 );
+
 		$addon_loader = new TTP_Addon_Loader();
 		$addon_loader->init();
-		add_action( 'plugins_loaded', array( $this, 'register_items_and_apply_scenarios' ), 20 );
 
 		$dashboard_actions = new TTP_Dashboard_Actions( $this->registry, $this->scenario_store, $this->backup_store, $this->schema_sanitizer, $this->activity_store );
 
@@ -102,6 +104,19 @@ class TTP_Plugin {
 
 		$rest_controller = new TTP_REST_Controller( $this->registry, $this->scenario_store, $this->backup_store, $dashboard_actions, $dashboard_renderer );
 		$rest_controller->init();
+	}
+
+	/**
+	 * Load plugin translations (WordPress 6.7+ requires init or later).
+	 *
+	 * @return void
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain(
+			'themeisle-tester',
+			false,
+			dirname( plugin_basename( TTP_PLUGIN_FILE ) ) . '/languages'
+		);
 	}
 
 	/**

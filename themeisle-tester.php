@@ -65,4 +65,4 @@ foreach ( $ttp_files as $ttp_file ) {
 
 TTP_Addon_Loader::load_addon_files();
 
-TTP_Plugin::instance()->init();
+add_action( 'plugins_loaded', array( TTP_Plugin::instance(), 'init' ) );
